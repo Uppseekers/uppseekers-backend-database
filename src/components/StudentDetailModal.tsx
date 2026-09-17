@@ -25,16 +25,21 @@ import {
   Star,
   Flame,
   Globe,
+  Edit3,
 } from 'lucide-react';
 
 interface StudentDetailModalProps {
   student: StudentProfile | null;
   onClose: () => void;
+  onEdit?: (student: StudentProfile) => void;
+  isAdmin?: boolean;
 }
 
 export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   student,
   onClose,
+  onEdit,
+  isAdmin,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -68,15 +73,29 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
       >
         {/* Modal Header */}
         <div className="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 border-b border-indigo-900/60">
-          <button
-            type="button"
-            id="close-modal-btn"
-            onClick={onClose}
-            className="absolute top-5 right-5 p-2 text-slate-400 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none"
-            aria-label="Close modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="absolute top-5 right-5 flex items-center gap-2">
+            {isAdmin && onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(student)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 rounded-xl transition-all cursor-pointer shadow-xs"
+                title="Edit this student profile (Admin)"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Profile</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              id="close-modal-btn"
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-white rounded-full bg-white/10 hover:bg-white/20 transition-colors focus:outline-none"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">

@@ -5,6 +5,7 @@ import { StudentCard } from './components/StudentCard';
 import { TableView } from './components/TableView';
 import { StudentDetailModal } from './components/StudentDetailModal';
 import { SyncSheetModal } from './components/SyncSheetModal';
+import { EditStudentModal } from './components/EditStudentModal';
 import { LoginScreen } from './components/LoginScreen';
 import { INITIAL_STUDENTS } from './initialData';
 import { StudentProfile, FilterState, AuthUser } from './types';
@@ -21,9 +22,14 @@ export default function App() {
         if (
           parsed &&
           typeof parsed.email === 'string' &&
-          parsed.email.toLowerCase().endsWith('@uppseekers.com')
+          (parsed.email.toLowerCase() === 'uppseekers@gmail.com' ||
+            parsed.email.toLowerCase().endsWith('@uppseekers.com'))
         ) {
-          return parsed;
+          return {
+            ...parsed,
+            role: parsed.role || (parsed.email.toLowerCase() === 'uppseekers@gmail.com' ? 'admin' : 'staff'),
+            isAdmin: parsed.isAdmin ?? (parsed.email.toLowerCase() === 'uppseekers@gmail.com'),
+          };
         }
       }
     } catch {
@@ -79,8 +85,78 @@ export default function App() {
   };
 
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
+
+  const handleOpenEdit = (student: StudentProfile) => {
+    setEditingStudent(student);
+    setIsEditModalOpen(true);
+  };
+
+  const handleAddNewStudent = () => {
+    const newStudentTemplate: StudentProfile = {
+      id: `student-manual-${Date.now()}`,
+      name: '',
+      university: '',
+      course: '',
+      classOf: '2028',
+      linkedin: '',
+      academicsPerformance: '',
+      apTaken: '',
+      actSat: '',
+      languageTest: '',
+      internshipWork: '',
+      research: '',
+      summerPrograms: '',
+      certificatesMoocs: '',
+      competitionsAwards: '',
+      projects: '',
+      otherActivities: '',
+      notes: '',
+    };
+    setEditingStudent(newStudentTemplate);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveStudent = (updatedStudent: StudentProfile) => {
+    setStudents((prev) => {
+      const exists = prev.some((s) => s.id === updatedStudent.id);
+      let updated: StudentProfile[];
+      if (exists) {
+        updated = prev.map((s) => (s.id === updatedStudent.id ? updatedStudent : s));
+      } else {
+        updated = [updatedStudent, ...prev];
+      }
+      try {
+        localStorage.setItem('uppseekers_custom_students', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+
+    if (selectedStudent && selectedStudent.id === updatedStudent.id) {
+      setSelectedStudent(updatedStudent);
+    }
+  };
+
+  const handleDeleteStudent = (id: string) => {
+    setStudents((prev) => {
+      const updated = prev.filter((s) => s.id !== id);
+      try {
+        localStorage.setItem('uppseekers_custom_students', JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+
+    if (selectedStudent && selectedStudent.id === id) {
+      setSelectedStudent(null);
+    }
+  };
 
   // Filter state: Class of, University, Search Query, and Ranking Option
   const [filters, setFilters] = useState<FilterState>({
@@ -248,6 +324,7 @@ export default function App() {
         user={authUser}
         onLogout={handleLogout}
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
+        onAddNewStudent={handleAddNewStudent}
       />
 
       {/* Main Container */}
@@ -312,6 +389,8 @@ export default function App() {
                   key={student.id}
                   student={student}
                   onSelect={setSelectedStudent}
+                  onEdit={handleOpenEdit}
+                  isAdmin={authUser?.isAdmin}
                 />
               ))}
             </div>
@@ -319,6 +398,8 @@ export default function App() {
             <TableView
               students={filteredStudents}
               onSelect={setSelectedStudent}
+              onEdit={handleOpenEdit}
+              isAdmin={authUser?.isAdmin}
             />
           )
         ) : (
@@ -372,6 +453,8 @@ export default function App() {
       <StudentDetailModal
         student={selectedStudent}
         onClose={() => setSelectedStudent(null)}
+        isAdmin={authUser?.isAdmin}
+        onEdit={handleOpenEdit}
       />
 
       {/* Synchronize / Update Student Dataset Modal */}
@@ -381,6 +464,19 @@ export default function App() {
         onUpdateStudents={handleUpdateStudents}
         onResetDefault={handleResetDefault}
         currentCount={students.length}
+        isAdmin={authUser?.isAdmin}
+      />
+
+      {/* Admin Edit Student Modal */}
+      <EditStudentModal
+        isOpen={isEditModalOpen}
+        student={editingStudent}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingStudent(null);
+        }}
+        onSave={handleSaveStudent}
+        onDelete={handleDeleteStudent}
       />
     </div>
   );

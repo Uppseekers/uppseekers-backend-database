@@ -29,7 +29,11 @@ export interface FilterState {
   onlyWithStandouts?: boolean;
 }
 
+export type UserRole = 'admin' | 'staff';
+
 export interface AuthUser {
   email: string;
   loginAt: string;
+  role: UserRole;
+  isAdmin?: boolean;
 }

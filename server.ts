@@ -35,7 +35,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', serverTime: new Date().toISOString() });
 });
 
-// Authentication endpoint for UppSeekers corporate accounts
+// Authentication endpoint for UppSeekers corporate accounts & Admin account
 app.post('/api/auth/login', (req, res) => {
   try {
     const { email, password } = req.body || {};
@@ -45,32 +45,42 @@ app.post('/api/auth/login', (req, res) => {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    // Check 1: Master Admin Account (uppseekers@gmail.com / Uppseekers@12345)
+    if (cleanEmail === 'uppseekers@gmail.com' && cleanPassword === 'Uppseekers@12345') {
+      res.json({
+        success: true,
+        user: {
+          email: cleanEmail,
+          role: 'admin',
+          isAdmin: true,
+          loginAt: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    // Check 2: Staff / Corporate accounts (*@uppseekers.com / Admits@131)
     const emailParts = cleanEmail.split('@');
+    const isCorporateDomain = emailParts.length === 2 && emailParts[0].length > 0 && cleanEmail.endsWith('@uppseekers.com');
 
-    // Ensure email is valid and belongs to the @uppseekers.com domain
-    if (emailParts.length !== 2 || emailParts[0].length === 0 || !cleanEmail.endsWith('@uppseekers.com')) {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid email or password. Please verify your credentials.',
+    if (isCorporateDomain && cleanPassword === 'Admits@131') {
+      res.json({
+        success: true,
+        user: {
+          email: cleanEmail,
+          role: 'staff',
+          isAdmin: false,
+          loginAt: new Date().toISOString(),
+        },
       });
       return;
     }
 
-    // Check designated password
-    if (password !== 'Admits@131') {
-      res.status(401).json({
-        success: false,
-        error: 'Invalid email or password. Please verify your credentials.',
-      });
-      return;
-    }
-
-    res.json({
-      success: true,
-      user: {
-        email: cleanEmail,
-        loginAt: new Date().toISOString(),
-      },
+    res.status(401).json({
+      success: false,
+      error: 'Invalid email or password. Please verify your credentials.',
     });
   } catch (error) {
     console.error('Login error:', error);

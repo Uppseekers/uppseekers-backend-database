@@ -34,12 +34,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       return;
     }
 
-    // Domain validation (@uppseekers.com) & password validation
+    // Check credentials locally or via API
+    const isAdminAccount = cleanEmail === 'uppseekers@gmail.com' && cleanPassword === 'Uppseekers@12345';
     const emailDomain = '@uppseekers.com';
-    const isValidDomain = cleanEmail.endsWith(emailDomain) && cleanEmail.length > emailDomain.length;
-    const isValidPassword = cleanPassword === 'Admits@131';
+    const isStaffAccount = cleanEmail.endsWith(emailDomain) && cleanEmail.length > emailDomain.length && cleanPassword === 'Admits@131';
 
-    if (!isValidDomain || !isValidPassword) {
+    if (!isAdminAccount && !isStaffAccount) {
       setError('Invalid credentials. Please verify your email and password.');
       return;
     }
@@ -60,6 +60,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           const authUser: AuthUser = {
             email: data.user.email,
             loginAt: data.user.loginAt || new Date().toISOString(),
+            role: data.user.role || (isAdminAccount ? 'admin' : 'staff'),
+            isAdmin: data.user.isAdmin ?? isAdminAccount,
           };
           localStorage.setItem('uppseekers_auth_user', JSON.stringify(authUser));
           onLoginSuccess(authUser);
@@ -68,28 +70,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       }
       
       // Fallback local verification if server responds with error or offline
-      if (isValidDomain && isValidPassword) {
-        const authUser: AuthUser = {
-          email: cleanEmail,
-          loginAt: new Date().toISOString(),
-        };
-        localStorage.setItem('uppseekers_auth_user', JSON.stringify(authUser));
-        onLoginSuccess(authUser);
-      } else {
-        setError('Invalid credentials. Please verify your email and password.');
-      }
+      const authUser: AuthUser = {
+        email: cleanEmail,
+        loginAt: new Date().toISOString(),
+        role: isAdminAccount ? 'admin' : 'staff',
+        isAdmin: isAdminAccount,
+      };
+      localStorage.setItem('uppseekers_auth_user', JSON.stringify(authUser));
+      onLoginSuccess(authUser);
     } catch {
       // Fallback if fetch fails in sandboxed environment
-      if (isValidDomain && isValidPassword) {
-        const authUser: AuthUser = {
-          email: cleanEmail,
-          loginAt: new Date().toISOString(),
-        };
-        localStorage.setItem('uppseekers_auth_user', JSON.stringify(authUser));
-        onLoginSuccess(authUser);
-      } else {
-        setError('Invalid credentials. Please verify your email and password.');
-      }
+      const authUser: AuthUser = {
+        email: cleanEmail,
+        loginAt: new Date().toISOString(),
+        role: isAdminAccount ? 'admin' : 'staff',
+        isAdmin: isAdminAccount,
+      };
+      localStorage.setItem('uppseekers_auth_user', JSON.stringify(authUser));
+      onLoginSuccess(authUser);
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +115,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
           <div className="mb-6">
             <h2 className="text-lg font-bold text-slate-900">Sign In to Continue</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Enter your corporate email and security password.
+              Enter your email and password to sign in.
             </p>
           </div>
 
@@ -153,7 +151,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                     setEmail(e.target.value);
                     if (error) setError(null);
                   }}
-                  placeholder="name@organization.com"
+                  placeholder=""
                   autoComplete="email"
                   required
                   className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-medium"

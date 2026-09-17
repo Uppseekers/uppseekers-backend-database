@@ -8,6 +8,8 @@ import {
   LogOut,
   UserCheck,
   FileSpreadsheet,
+  ShieldAlert,
+  PlusCircle,
 } from 'lucide-react';
 import { AuthUser } from '../types';
 
@@ -19,6 +21,7 @@ interface NavbarProps {
   user?: AuthUser | null;
   onLogout?: () => void;
   onOpenSyncModal?: () => void;
+  onAddNewStudent?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -29,6 +32,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   user,
   onLogout,
   onOpenSyncModal,
+  onAddNewStudent,
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
@@ -96,17 +100,37 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
+            {/* Admin Add Student Button */}
+            {user?.isAdmin && onAddNewStudent && (
+              <button
+                type="button"
+                id="navbar-add-student-btn"
+                onClick={onAddNewStudent}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-all shadow-2xs cursor-pointer"
+                title="Add a new student profile manually"
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden sm:inline">Add Student</span>
+              </button>
+            )}
+
             {/* Sync / Update Sheet Data Button */}
             {onOpenSyncModal && (
               <button
                 type="button"
                 id="navbar-sync-sheet-btn"
                 onClick={onOpenSyncModal}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all shadow-2xs cursor-pointer"
-                title="Update student dataset from Google Sheets or CSV"
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl transition-all shadow-2xs cursor-pointer ${
+                  user?.isAdmin
+                    ? 'text-emerald-800 bg-emerald-100 hover:bg-emerald-200/80 border border-emerald-300 font-bold'
+                    : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200'
+                }`}
+                title={user?.isAdmin ? "Sync & Manage Master Google Sheet" : "Update student dataset from Google Sheets or CSV"}
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="hidden sm:inline">Update Data</span>
+                <span className="hidden sm:inline">
+                  {user?.isAdmin ? 'Sync Master Sheet' : 'Update Data'}
+                </span>
               </button>
             )}
 
@@ -126,11 +150,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-slate-200">
                 <div className="hidden lg:flex flex-col items-end">
                   <div className="flex items-center gap-1 text-xs font-semibold text-slate-800">
-                    <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    {user.isAdmin ? (
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                    ) : (
+                      <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    )}
                     <span className="max-w-[140px] truncate">{user.email}</span>
                   </div>
-                  <span className="text-[10px] text-emerald-700 font-medium">
-                    Authorized Access
+                  <span
+                    className={`text-[10px] font-bold ${
+                      user.isAdmin ? 'text-amber-700' : 'text-emerald-700'
+                    }`}
+                  >
+                    {user.isAdmin ? 'Master Administrator' : 'Authorized Staff'}
                   </span>
                 </div>
 

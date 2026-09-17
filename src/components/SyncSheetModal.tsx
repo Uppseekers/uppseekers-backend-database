@@ -18,6 +18,7 @@ interface SyncSheetModalProps {
   onUpdateStudents: (students: StudentProfile[]) => void;
   onResetDefault: () => void;
   currentCount: number;
+  isAdmin?: boolean;
 }
 
 export const SyncSheetModal: React.FC<SyncSheetModalProps> = ({
@@ -26,6 +27,7 @@ export const SyncSheetModal: React.FC<SyncSheetModalProps> = ({
   onUpdateStudents,
   onResetDefault,
   currentCount,
+  isAdmin,
 }) => {
   const [sheetUrl, setSheetUrl] = useState(() => {
     return localStorage.getItem('uppseekers_saved_sheet_url') || '';
@@ -150,12 +152,27 @@ export const SyncSheetModal: React.FC<SyncSheetModalProps> = ({
         {/* Header */}
         <div className="p-5 sm:p-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+            <div className={`h-10 w-10 rounded-xl text-white flex items-center justify-center shadow-sm ${
+              isAdmin ? 'bg-indigo-600' : 'bg-emerald-600'
+            }`}>
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-base">Update Student Dataset</h3>
-              <p className="text-xs text-slate-500">Currently active: {currentCount} student dossiers</p>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-slate-900 text-base">
+                  {isAdmin ? 'Master Google Sheet Sync & Update' : 'Update Student Dataset'}
+                </h3>
+                {isAdmin && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 uppercase">
+                    Admin Portal
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">
+                {isAdmin
+                  ? `Sync live database with your master Google spreadsheet • ${currentCount} records active`
+                  : `Currently active: ${currentCount} student dossiers`}
+              </p>
             </div>
           </div>
           <button

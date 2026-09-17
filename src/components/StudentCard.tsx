@@ -11,6 +11,7 @@ import {
   Star,
   Zap,
   FolderGit2,
+  Edit3,
 } from 'lucide-react';
 import { StudentProfile } from '../types';
 import { BlurredName } from './BlurredName';
@@ -20,9 +21,11 @@ import { calculateProfileCompleteness } from '../utils/workAnalyzer';
 interface StudentCardProps {
   student: StudentProfile;
   onSelect: (student: StudentProfile) => void;
+  onEdit?: (student: StudentProfile) => void;
+  isAdmin?: boolean;
 }
 
-export const StudentCard: React.FC<StudentCardProps> = ({ student, onSelect }) => {
+export const StudentCard: React.FC<StudentCardProps> = ({ student, onSelect, onEdit, isAdmin }) => {
   const completeness = calculateProfileCompleteness(student);
   const internItems = parseBulletItems(student.internshipWork);
   const researchItems = parseBulletItems(student.research);
@@ -207,13 +210,31 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onSelect }) =
             </span>
           )}
         </div>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 group-hover:text-indigo-700 group-hover:translate-x-0.5 transition-all"
-        >
-          <span>View Dossier</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+
+        <div className="flex items-center gap-2">
+          {isAdmin && onEdit && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(student);
+              }}
+              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+              title="Edit this student record"
+            >
+              <Edit3 className="w-3 h-3 text-amber-600" />
+              <span>Edit</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 group-hover:text-indigo-700 group-hover:translate-x-0.5 transition-all"
+          >
+            <span>View Dossier</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
