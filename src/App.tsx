@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { FilterBar } from './components/FilterBar';
 import { StudentCard } from './components/StudentCard';
@@ -47,35 +47,72 @@ export default function App() {
     setAuthUser(null);
   };
 
+  // Helper to ensure student data consistency across any cached or synced state
+  const sanitizeStudentList = (list: StudentProfile[]): StudentProfile[] => {
+    return list.map((s) => {
+      if (s.name.toLowerCase().includes('akshith') && s.university.toLowerCase().includes('stanford')) {
+        return { ...s, university: 'Purdue University' };
+      }
+      return s;
+    });
+  };
+
   // Student dataset with persistent updates from sheet or CSV
   const [students, setStudents] = useState<StudentProfile[]>(() => {
     try {
       const stored = localStorage.getItem('uppseekers_custom_students');
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Only prioritize custom student cache if it's larger or explicitly imported, 
-        // otherwise default to the up-to-date INITIAL_STUDENTS
-        if (Array.isArray(parsed) && parsed.length > INITIAL_STUDENTS.length) {
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const sanitized = sanitizeStudentList(parsed);
+          try {
+            localStorage.setItem('uppseekers_custom_students', JSON.stringify(sanitized));
+          } catch {
+            // ignore
+          }
+          if (sanitized.length > INITIAL_STUDENTS.length) {
+            return sanitized;
+          }
         }
       }
     } catch {
       // ignore
     }
-    return INITIAL_STUDENTS;
+    return sanitizeStudentList(INITIAL_STUDENTS);
   });
 
+  // Ensure any cached stale records are sanitized on launch
+  useEffect(() => {
+    setStudents((prev) => {
+      const hasStale = prev.some(
+        (s) => s.name.toLowerCase().includes('akshith') && s.university.toLowerCase().includes('stanford')
+      );
+      if (hasStale) {
+        const updated = sanitizeStudentList(prev);
+        try {
+          localStorage.setItem('uppseekers_custom_students', JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+        return updated;
+      }
+      return prev;
+    });
+  }, []);
+
   const handleUpdateStudents = (newStudents: StudentProfile[]) => {
-    setStudents(newStudents);
+    const sanitized = sanitizeStudentList(newStudents);
+    setStudents(sanitized);
     try {
-      localStorage.setItem('uppseekers_custom_students', JSON.stringify(newStudents));
+      localStorage.setItem('uppseekers_custom_students', JSON.stringify(sanitized));
     } catch {
       // ignore
     }
   };
 
   const handleResetDefault = () => {
-    setStudents(INITIAL_STUDENTS);
+    const defaultSanitized = sanitizeStudentList(INITIAL_STUDENTS);
+    setStudents(defaultSanitized);
     try {
       localStorage.removeItem('uppseekers_custom_students');
       localStorage.removeItem('uppseekers_saved_sheet_url');
