@@ -1,0 +1,8 @@
+{
+  "name": "UppSeekers Student Database",
+  "description": "Student profiles directory with university and class year filters, showcasing academic performance, internships, research, awards, and activities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
