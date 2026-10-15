@@ -4,6 +4,8 @@ import { BlurredName } from './BlurredName';
 import { cleanText, parseBulletItems, isFieldMissing, NOT_ADDED_TEXT } from '../utils/textCleaner';
 import { calculateProfileCompleteness, isStandoutItem, StandoutHighlight } from '../utils/workAnalyzer';
 import { MentorProfileSummary } from './MentorProfileSummary';
+import { SpiderChart } from './SpiderChart';
+import { evaluateStudent } from '../utils/studentEvaluation';
 import { DetailFieldDisplay } from './DetailFieldDisplay';
 import {
   X,
@@ -26,6 +28,8 @@ import {
   Flame,
   Globe,
   Edit3,
+  Scale,
+  Check,
 } from 'lucide-react';
 
 interface StudentDetailModalProps {
@@ -33,6 +37,8 @@ interface StudentDetailModalProps {
   onClose: () => void;
   onEdit?: (student: StudentProfile) => void;
   isAdmin?: boolean;
+  isCompared?: boolean;
+  onToggleCompare?: (student: StudentProfile) => void;
 }
 
 export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
@@ -40,6 +46,8 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   onClose,
   onEdit,
   isAdmin,
+  isCompared,
+  onToggleCompare,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -54,6 +62,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   if (!student) return null;
 
   const completeness = calculateProfileCompleteness(student);
+  const evalData = evaluateStudent(student);
   const internList = parseBulletItems(student.internshipWork);
   const researchList = parseBulletItems(student.research);
   const summerList = parseBulletItems(student.summerPrograms);
@@ -74,6 +83,22 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         {/* Modal Header */}
         <div className="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 border-b border-indigo-900/60">
           <div className="absolute top-5 right-5 flex items-center gap-2">
+            {onToggleCompare && (
+              <button
+                type="button"
+                onClick={() => onToggleCompare(student)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs border ${
+                  isCompared
+                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                    : 'bg-white/10 text-white hover:bg-white/20 border-white/20'
+                }`}
+                title={isCompared ? 'Remove from comparison' : 'Add to side-by-side comparison (up to 3)'}
+              >
+                {isCompared ? <Check className="w-3.5 h-3.5" /> : <Scale className="w-3.5 h-3.5" />}
+                <span>{isCompared ? 'In Comparison' : 'Compare Candidate'}</span>
+              </button>
+            )}
+
             {isAdmin && onEdit && (
               <button
                 type="button"
@@ -212,6 +237,64 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
               </div>
             </div>
           )}
+
+          {/* MLS 6-ASPECT COMPETENCY SPIDER CHART & RUBRIC */}
+          <div className="bg-slate-50/90 rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-2xs">
+            <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Scale className="w-4 h-4 text-indigo-600" />
+                  <span>MLS Competency Spider Chart</span>
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                    {evalData.compositeScore}/100 · {evalData.evaluationTier}
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Standardized MLS radar evaluation across 6 core competency aspects: Problem Solving, Technical Skills, Critical Thinking, Team Work, Communication, and Creativity.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium">
+                  Primary Spike: <strong className="text-indigo-600">{evalData.primarySpike}</strong>
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium">
+                  Secondary: <strong className="text-slate-900">{evalData.secondarySpike}</strong>
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              <div className="lg:col-span-6 flex justify-center bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
+                <SpiderChart students={[student]} interactive={true} />
+              </div>
+              <div className="lg:col-span-6 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {evalData.dimensions.map((dim) => (
+                    <div
+                      key={dim.key}
+                      className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="font-bold text-slate-900">{dim.label}</span>
+                          <span className="font-mono font-bold text-indigo-600">{dim.score}/100</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden mb-1.5">
+                          <div
+                            className="h-full bg-indigo-600 rounded-full transition-all"
+                            style={{ width: `${dim.score}%` }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-snug">
+                          {dim.evidence}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Section 1: Academics, Standardized Tests & Language */}
           <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200">

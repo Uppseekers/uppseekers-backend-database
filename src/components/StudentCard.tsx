@@ -12,6 +12,8 @@ import {
   Zap,
   FolderGit2,
   Edit3,
+  Scale,
+  Check,
 } from 'lucide-react';
 import { StudentProfile } from '../types';
 import { BlurredName } from './BlurredName';
@@ -23,9 +25,18 @@ interface StudentCardProps {
   onSelect: (student: StudentProfile) => void;
   onEdit?: (student: StudentProfile) => void;
   isAdmin?: boolean;
+  isCompared?: boolean;
+  onToggleCompare?: (student: StudentProfile) => void;
 }
 
-export const StudentCard: React.FC<StudentCardProps> = ({ student, onSelect, onEdit, isAdmin }) => {
+export const StudentCard: React.FC<StudentCardProps> = ({
+  student,
+  onSelect,
+  onEdit,
+  isAdmin,
+  isCompared,
+  onToggleCompare,
+}) => {
   const completeness = calculateProfileCompleteness(student);
   const internItems = parseBulletItems(student.internshipWork);
   const researchItems = parseBulletItems(student.research);
@@ -43,7 +54,9 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onSelect, onE
       id={`student-card-${student.id}`}
       onClick={() => onSelect(student)}
       className={`group bg-white border rounded-2xl p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between cursor-pointer relative overflow-hidden ${
-        completeness.detailTier === 'Comprehensive'
+        isCompared
+          ? 'border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm'
+          : completeness.detailTier === 'Comprehensive'
           ? 'border-indigo-200 hover:border-indigo-500'
           : 'border-slate-200 hover:border-indigo-400'
       }`}
@@ -212,6 +225,34 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onSelect, onE
         </div>
 
         <div className="flex items-center gap-2">
+          {onToggleCompare && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleCompare(student);
+              }}
+              title={isCompared ? 'Remove from comparison' : 'Add to side-by-side comparison (up to 3)'}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-lg transition-colors border ${
+                isCompared
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                  : 'bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border-slate-200'
+              }`}
+            >
+              {isCompared ? (
+                <>
+                  <Check className="w-3 h-3" />
+                  <span>Comparing</span>
+                </>
+              ) : (
+                <>
+                  <Scale className="w-3 h-3 text-indigo-500" />
+                  <span>Compare</span>
+                </>
+              )}
+            </button>
+          )}
+
           {isAdmin && onEdit && (
             <button
               type="button"

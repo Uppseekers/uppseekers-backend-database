@@ -16,6 +16,8 @@ import {
   BookOpen,
   ArrowLeftRight,
   Edit3,
+  Scale,
+  Check,
 } from 'lucide-react';
 
 interface TableViewProps {
@@ -23,9 +25,18 @@ interface TableViewProps {
   onSelect: (student: StudentProfile) => void;
   onEdit?: (student: StudentProfile) => void;
   isAdmin?: boolean;
+  comparedStudentIds?: string[];
+  onToggleCompare?: (student: StudentProfile) => void;
 }
 
-export const TableView: React.FC<TableViewProps> = ({ students, onSelect, onEdit, isAdmin }) => {
+export const TableView: React.FC<TableViewProps> = ({
+  students,
+  onSelect,
+  onEdit,
+  isAdmin,
+  comparedStudentIds = [],
+  onToggleCompare,
+}) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
@@ -192,6 +203,7 @@ export const TableView: React.FC<TableViewProps> = ({ students, onSelect, onEdit
               const hasTestScores = !isFieldMissing(student.actSat);
               const hasMajor = !isFieldMissing(student.course);
               const isEvenRow = idx % 2 === 0;
+              const isCompared = comparedStudentIds.includes(student.id);
 
               return (
                 <tr
@@ -206,19 +218,38 @@ export const TableView: React.FC<TableViewProps> = ({ students, onSelect, onEdit
                       isEvenRow ? 'bg-white group-hover:bg-indigo-50/90' : 'bg-slate-50/90 group-hover:bg-indigo-50/90'
                     }`}
                   >
-                    <div className="flex flex-col">
-                      <BlurredName fullName={student.name} />
-                      {primaryStandout && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-100/90 px-1.5 py-0.5 rounded mt-1 w-max border border-amber-200">
-                          <Star className="w-2.5 h-2.5 fill-amber-600 text-amber-600 shrink-0" />
-                          <span className="truncate max-w-[170px]">{primaryStandout.badge}</span>
-                        </span>
+                    <div className="flex items-start gap-2">
+                      {onToggleCompare && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleCompare(student);
+                          }}
+                          title={isCompared ? 'Remove from comparison' : 'Add to side-by-side comparison'}
+                          className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-colors mt-0.5 ${
+                            isCompared
+                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                              : 'bg-white hover:bg-slate-100 text-slate-400 hover:text-indigo-600 border-slate-300'
+                          }`}
+                        >
+                          {isCompared ? <Check className="w-3 h-3" /> : <Scale className="w-3 h-3" />}
+                        </button>
                       )}
-                      {student.linkedin && (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 mt-0.5">
-                          <Linkedin className="w-2.5 h-2.5 shrink-0" /> LinkedIn Available
-                        </span>
-                      )}
+                      <div className="flex flex-col min-w-0">
+                        <BlurredName fullName={student.name} />
+                        {primaryStandout && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-900 bg-amber-100/90 px-1.5 py-0.5 rounded mt-1 w-max border border-amber-200">
+                            <Star className="w-2.5 h-2.5 fill-amber-600 text-amber-600 shrink-0" />
+                            <span className="truncate max-w-[150px]">{primaryStandout.badge}</span>
+                          </span>
+                        )}
+                        {student.linkedin && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 mt-0.5">
+                            <Linkedin className="w-2.5 h-2.5 shrink-0" /> LinkedIn Available
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </td>
 

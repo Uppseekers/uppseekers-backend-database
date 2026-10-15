@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   ShieldAlert,
   PlusCircle,
+  Scale,
 } from 'lucide-react';
 import { AuthUser } from '../types';
 
@@ -22,6 +23,8 @@ interface NavbarProps {
   onLogout?: () => void;
   onOpenSyncModal?: () => void;
   onAddNewStudent?: () => void;
+  comparedCount?: number;
+  onOpenComparison?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,6 +36,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   onOpenSyncModal,
   onAddNewStudent,
+  comparedCount = 0,
+  onOpenComparison,
 }) => {
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
@@ -99,6 +104,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="hidden xs:inline sm:inline">Table</span>
               </button>
             </div>
+
+            {/* Compare Profiles Button */}
+            {onOpenComparison && (
+              <button
+                type="button"
+                id="navbar-compare-profiles-btn"
+                onClick={onOpenComparison}
+                className={`relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl transition-all shadow-2xs cursor-pointer ${
+                  comparedCount > 0
+                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold'
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
+                }`}
+                title="Compare up to 3 candidate profiles side-by-side"
+              >
+                <Scale className="w-3.5 h-3.5" />
+                <span>Compare</span>
+                {comparedCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-white text-indigo-700 text-[10px] font-bold flex items-center justify-center">
+                    {comparedCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Admin Add Student Button */}
             {user?.isAdmin && onAddNewStudent && (

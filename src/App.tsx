@@ -4,13 +4,15 @@ import { FilterBar } from './components/FilterBar';
 import { StudentCard } from './components/StudentCard';
 import { TableView } from './components/TableView';
 import { StudentDetailModal } from './components/StudentDetailModal';
+import { StudentComparisonModal } from './components/StudentComparisonModal';
+import { ComparisonDock } from './components/ComparisonDock';
 import { SyncSheetModal } from './components/SyncSheetModal';
 import { EditStudentModal } from './components/EditStudentModal';
 import { LoginScreen } from './components/LoginScreen';
 import { INITIAL_STUDENTS } from './initialData';
 import { StudentProfile, FilterState, AuthUser } from './types';
 import { calculateProfileCompleteness } from './utils/workAnalyzer';
-import { GraduationCap, Users, Building2, SearchX, Shield, Star, Zap } from 'lucide-react';
+import { GraduationCap, Users, Building2, SearchX, Shield, Star, Zap, Scale } from 'lucide-react';
 
 export default function App() {
   // Authentication state initialized from localStorage
@@ -47,19 +49,30 @@ export default function App() {
     setAuthUser(null);
   };
 
+  const CURRENT_DATA_VERSION = '2026.10_cohort_53_active_v5';
+
   // Helper to ensure student data consistency across any cached or synced state
   const sanitizeStudentList = (list: StudentProfile[]): StudentProfile[] => {
-    return list.map((s) => {
-      if (s.name.toLowerCase().includes('akshith') && s.university.toLowerCase().includes('stanford')) {
-        return { ...s, university: 'Purdue University' };
-      }
-      return s;
-    });
+    return list
+      .filter((s) => Boolean(s && s.name && s.name.trim()))
+      .map((s) => {
+        if (s.name.toLowerCase().includes('akshith')) {
+          return { ...s, university: 'Purdue University' };
+        }
+        return s;
+      });
   };
 
   // Student dataset with persistent updates from sheet or CSV
   const [students, setStudents] = useState<StudentProfile[]>(() => {
     try {
+      const storedVersion = localStorage.getItem('uppseekers_data_version');
+      if (storedVersion !== CURRENT_DATA_VERSION) {
+        localStorage.removeItem('uppseekers_custom_students');
+        localStorage.setItem('uppseekers_data_version', CURRENT_DATA_VERSION);
+        return sanitizeStudentList(INITIAL_STUDENTS);
+      }
+
       const stored = localStorage.getItem('uppseekers_custom_students');
       if (stored) {
         const parsed = JSON.parse(stored);
@@ -70,7 +83,7 @@ export default function App() {
           } catch {
             // ignore
           }
-          if (sanitized.length > INITIAL_STUDENTS.length) {
+          if (sanitized.length > 0) {
             return sanitized;
           }
         }
@@ -83,18 +96,20 @@ export default function App() {
 
   // Ensure any cached stale records are sanitized on launch
   useEffect(() => {
+    try {
+      localStorage.setItem('uppseekers_data_version', CURRENT_DATA_VERSION);
+    } catch {
+      // ignore
+    }
     setStudents((prev) => {
-      const hasStale = prev.some(
-        (s) => s.name.toLowerCase().includes('akshith') && s.university.toLowerCase().includes('stanford')
-      );
-      if (hasStale) {
-        const updated = sanitizeStudentList(prev);
+      const filtered = sanitizeStudentList(prev);
+      if (filtered.length !== prev.length || prev.some(s => s.name.toLowerCase().includes('akshith') && s.university.toLowerCase().includes('stanford'))) {
         try {
-          localStorage.setItem('uppseekers_custom_students', JSON.stringify(updated));
+          localStorage.setItem('uppseekers_custom_students', JSON.stringify(filtered));
         } catch {
           // ignore
         }
-        return updated;
+        return filtered;
       }
       return prev;
     });
@@ -105,6 +120,7 @@ export default function App() {
     setStudents(sanitized);
     try {
       localStorage.setItem('uppseekers_custom_students', JSON.stringify(sanitized));
+      localStorage.setItem('uppseekers_data_version', CURRENT_DATA_VERSION);
     } catch {
       // ignore
     }
@@ -116,6 +132,7 @@ export default function App() {
     try {
       localStorage.removeItem('uppseekers_custom_students');
       localStorage.removeItem('uppseekers_saved_sheet_url');
+      localStorage.setItem('uppseekers_data_version', CURRENT_DATA_VERSION);
     } catch {
       // ignore
     }
@@ -126,6 +143,65 @@ export default function App() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
+
+  // Candidate Comparison State (up to 3 profiles)
+  const [comparedStudentIds, setComparedStudentIds] = useState<string[]>(() => {
+    try {
+      const stored = sessionStorage.getItem('uppseekers_compared_students');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed.slice(0, 3);
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('uppseekers_compared_students', JSON.stringify(comparedStudentIds));
+    } catch {
+      // ignore
+    }
+  }, [comparedStudentIds]);
+
+  const handleToggleCompare = (student: StudentProfile) => {
+    setComparedStudentIds((prev) => {
+      if (prev.includes(student.id)) {
+        return prev.filter((id) => id !== student.id);
+      }
+      if (prev.length >= 3) {
+        return [...prev.slice(1), student.id];
+      }
+      return [...prev, student.id];
+    });
+  };
+
+  const handleAddCompareStudent = (student: StudentProfile) => {
+    setComparedStudentIds((prev) => {
+      if (prev.includes(student.id)) return prev;
+      if (prev.length >= 3) {
+        return [...prev.slice(1), student.id];
+      }
+      return [...prev, student.id];
+    });
+  };
+
+  const handleRemoveCompareStudent = (studentId: string) => {
+    setComparedStudentIds((prev) => prev.filter((id) => id !== studentId));
+  };
+
+  const handleClearCompare = () => {
+    setComparedStudentIds([]);
+  };
+
+  const comparedStudents = useMemo(() => {
+    return comparedStudentIds
+      .map((id) => students.find((s) => s.id === id))
+      .filter((s): s is StudentProfile => Boolean(s));
+  }, [comparedStudentIds, students]);
 
   const handleOpenEdit = (student: StudentProfile) => {
     setEditingStudent(student);
@@ -362,6 +438,8 @@ export default function App() {
         onLogout={handleLogout}
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
         onAddNewStudent={handleAddNewStudent}
+        comparedCount={comparedStudentIds.length}
+        onOpenComparison={() => setIsComparisonModalOpen(true)}
       />
 
       {/* Main Container */}
@@ -428,6 +506,8 @@ export default function App() {
                   onSelect={setSelectedStudent}
                   onEdit={handleOpenEdit}
                   isAdmin={authUser?.isAdmin}
+                  isCompared={comparedStudentIds.includes(student.id)}
+                  onToggleCompare={handleToggleCompare}
                 />
               ))}
             </div>
@@ -437,6 +517,8 @@ export default function App() {
               onSelect={setSelectedStudent}
               onEdit={handleOpenEdit}
               isAdmin={authUser?.isAdmin}
+              comparedStudentIds={comparedStudentIds}
+              onToggleCompare={handleToggleCompare}
             />
           )
         ) : (
@@ -469,6 +551,14 @@ export default function App() {
         )}
       </main>
 
+      {/* Floating Comparison Dock (visible when profiles are selected for comparison) */}
+      <ComparisonDock
+        selectedStudents={comparedStudents}
+        onOpenComparison={() => setIsComparisonModalOpen(true)}
+        onRemoveStudent={handleRemoveCompareStudent}
+        onClearAll={handleClearCompare}
+      />
+
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -492,6 +582,19 @@ export default function App() {
         onClose={() => setSelectedStudent(null)}
         isAdmin={authUser?.isAdmin}
         onEdit={handleOpenEdit}
+        isCompared={selectedStudent ? comparedStudentIds.includes(selectedStudent.id) : false}
+        onToggleCompare={handleToggleCompare}
+      />
+
+      {/* Side-by-Side Candidate Comparison Modal with Spider Chart */}
+      <StudentComparisonModal
+        isOpen={isComparisonModalOpen}
+        onClose={() => setIsComparisonModalOpen(false)}
+        selectedStudents={comparedStudents}
+        allStudents={students}
+        onAddStudent={handleAddCompareStudent}
+        onRemoveStudent={handleRemoveCompareStudent}
+        onSelectForDetail={setSelectedStudent}
       />
 
       {/* Synchronize / Update Student Dataset Modal */}

@@ -79,23 +79,38 @@ export function parseStudentsFromCSV(csvText: string): StudentProfile[] {
 
   const rawHeaders = rows[0].map(h => cleanText(h).toLowerCase().trim());
 
-  // Find column index helper
+  // Find column index helper with exact matching priority and word boundaries for acronyms
   const findCol = (aliases: string[]): number => {
-    return rawHeaders.findIndex(h =>
-      aliases.some(alias => h.includes(alias.toLowerCase()))
-    );
+    // 1. Exact match pass
+    for (const alias of aliases) {
+      const idx = rawHeaders.findIndex(h => h === alias.toLowerCase().trim());
+      if (idx !== -1) return idx;
+    }
+    // 2. Strict / word boundary pass
+    for (const alias of aliases) {
+      const lowerAlias = alias.toLowerCase().trim();
+      const idx = rawHeaders.findIndex(h => {
+        if (!h) return false;
+        if (['act', 'ap', 'sat'].includes(lowerAlias)) {
+          return new RegExp(`(^|[^a-z])${lowerAlias}([^a-z]|$)`, 'i').test(h);
+        }
+        return h.includes(lowerAlias);
+      });
+      if (idx !== -1) return idx;
+    }
+    return -1;
   };
 
   const nameIdx = findCol(['name', 'student name']);
   const uniIdx = findCol(['university', 'college', 'school']);
   const linkedinIdx = findCol(['linkedin', 'linkedin account']);
-  const courseIdx = findCol(['course', 'major', 'degree', 'program']);
+  const courseIdx = findCol(['course', 'major', 'degree']);
   const academicIdx = findCol(['academics performance', 'academic performance', 'grades', 'gpa', 'academic']);
   const classOfIdx = findCol(['class of', 'graduation year', 'grad year', 'cohort']);
-  const apIdx = findCol(['ap taken', 'ap exams', 'ap']);
-  const testIdx = findCol(['act/sat', 'sat/act', 'sat', 'act', 'test score']);
+  const apIdx = findCol(['ap taken', 'ap exams', 'ap courses', 'ap']);
+  const testIdx = findCol(['act/sat', 'sat/act', 'sat', 'act', 'test score', 'standardized tests']);
   const langIdx = findCol(['language test', 'ielts', 'toefl', 'language']);
-  const internIdx = findCol(['internship', 'work experience', 'experience', 'internship (with year)/work']);
+  const internIdx = findCol(['internship (with year)/work', 'internship', 'work experience', 'experience']);
   const researchIdx = findCol(['research (with year)', 'research']);
   const summerIdx = findCol(['summer programs', 'summer program']);
   const certIdx = findCol(['certificate and moocs', 'certificate', 'mooc', 'certifications']);
@@ -124,17 +139,31 @@ export function parseStudentsFromCSV(csvText: string): StudentProfile[] {
     const yearMatch = rawClass.match(/20\d\d/);
     const classOf = yearMatch ? yearMatch[0] : (rawClass || 'N/A');
 
+    let actSat = getVal(row, testIdx);
+    let apTaken = getVal(row, apIdx);
+    let languageTest = getVal(row, langIdx);
+    const academicsPerformance = getVal(row, academicIdx);
+
+    // Intelligent score extraction if test columns were omitted in spreadsheet
+    if (!actSat && academicsPerformance) {
+      const satMatch = academicsPerformance.match(/(?:SAT|ACT)\s*(?:I|II)?\s*[:\-–]?\s*\d{3,4}(?:\/\d{3,4})?(?:\s*\([^\)]+\))?/i);
+      if (satMatch) {
+        actSat = satMatch[0];
+      }
+    }
+
+    const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
     students.push({
-      id: `student-${r}-${Date.now().toString(36)}`,
+      id: `student-${r}-${slug || 'profile'}`,
       name: name || 'Student Profile',
       university: university || 'University',
       linkedin: getVal(row, linkedinIdx),
       course: getVal(row, courseIdx),
-      academicsPerformance: getVal(row, academicIdx),
-      classOf: classOf,
-      apTaken: getVal(row, apIdx),
-      actSat: getVal(row, testIdx),
-      languageTest: getVal(row, langIdx),
+      academicsPerformance,
+      classOf,
+      apTaken,
+      actSat,
+      languageTest,
       internshipWork: getVal(row, internIdx),
       research: getVal(row, researchIdx),
       summerPrograms: getVal(row, summerIdx),
