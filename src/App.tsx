@@ -12,7 +12,6 @@ import { LoginScreen } from './components/LoginScreen';
 import { INITIAL_STUDENTS } from './initialData';
 import { StudentProfile, FilterState, AuthUser, AppTab, AdmittedStudentProfile } from './types';
 import { calculateProfileCompleteness } from './utils/workAnalyzer';
-import { NavigationTabs } from './components/NavigationTabs';
 import { BackEngineeredRoadmapView } from './components/roadmap/BackEngineeredRoadmapView';
 import { CompareLabView } from './components/comparison/CompareLabView';
 import {
@@ -455,66 +454,50 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#FAF9F5] flex flex-col text-stone-900 font-sans antialiased selection:bg-stone-800 selection:text-white">
-      {/* Primary Navigation Bar with View Mode Toggle and Authenticated User */}
+      {/* Unified Web Tool Header with Integrated Navigation & Actions */}
       <Navbar
-        totalCount={students.length}
+        currentTab={activeTab}
+        onTabChange={setActiveTab}
+        databaseCount={students.length}
         filteredCount={filteredStudents.length}
+        comparedCount={comparedStudentIds.length}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         user={authUser}
         onLogout={handleLogout}
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
         onAddNewStudent={handleAddNewStudent}
-        comparedCount={comparedStudentIds.length}
-        onOpenComparison={() => setActiveTab('compare_lab')}
-      />
-
-      {/* Top Level Navigation Tabs: Database, Pathfinder & Gap Analysis, Compare Lab */}
-      <NavigationTabs
-        currentTab={activeTab}
-        onTabChange={setActiveTab}
-        databaseCount={students.length}
-        comparedCount={comparedStudentIds.length}
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* TAB 1: STUDENT PROFILES DATABASE (Original Cohort) */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+        {/* TAB 1: STUDENT PROFILES DATABASE */}
         {activeTab === 'database' && (
           <>
-            {/* Page Top Heading & Scope Description */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 pb-4 border-b border-stone-200">
+            {/* Streamlined Directory Memo & Status Strip */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-3 border-b border-stone-200/90">
               <div>
-                <div className="flex items-center gap-2 text-xs font-mono text-stone-500 uppercase tracking-wider mb-1">
-                  <span>Student Directory Portal</span>
+                <div className="flex items-center gap-2 text-[11px] font-mono text-stone-500 uppercase tracking-wider mb-0.5">
+                  <span>Student Directory</span>
                   <span>·</span>
-                  <span>Work-Rich Profiles Ranked First</span>
+                  <span>Work-Rich Portfolios Ranked First</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-stone-900">
-                  Student Profiles & Portfolios
+                <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-stone-900">
+                  Student Dossiers & Non-Academic Portfolios
                 </h1>
-                <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl leading-relaxed">
-                  Explore student credentials, academic standing, research initiatives, work experience,
-                  and honors. Profiles with verified non-academic depth are indexed and highlighted.
-                </p>
               </div>
 
-              {/* Quick Metrics Badges */}
-              <div className="flex items-center gap-2 flex-wrap font-mono text-xs">
-                <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-lg border border-stone-200 shadow-2xs text-stone-700">
-                  <Users className="w-3.5 h-3.5 text-stone-600" />
-                  <span>{students.length} Candidates</span>
-                </div>
-
-                <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-lg border border-stone-200 shadow-2xs text-stone-700">
-                  <Star className="w-3.5 h-3.5 text-stone-600" />
-                  <span>{aggregateStats.standoutCount} Standout Portfolios</span>
-                </div>
-
-                <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-lg border border-stone-200 shadow-2xs text-stone-700">
-                  <Building2 className="w-3.5 h-3.5 text-stone-600" />
-                  <span>{availableUniversities.length} Institutions</span>
-                </div>
+              {/* Quick Metrics Badges (Understated Minimalist Monochrome) */}
+              <div className="flex items-center gap-2 flex-wrap font-mono text-xs shrink-0">
+                <span className="bg-white px-2.5 py-1 rounded-md border border-stone-200 text-stone-700 shadow-2xs">
+                  <strong>{students.length}</strong> Candidates
+                </span>
+                <span className="bg-white px-2.5 py-1 rounded-md border border-stone-200 text-stone-700 shadow-2xs">
+                  <strong>{aggregateStats.standoutCount}</strong> Standouts
+                </span>
+                <span className="bg-white px-2.5 py-1 rounded-md border border-stone-200 text-stone-700 shadow-2xs">
+                  <strong>{availableUniversities.length}</strong> Universities
+                </span>
               </div>
             </div>
 

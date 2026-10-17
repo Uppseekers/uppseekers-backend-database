@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   TrendingUp,
   Target,
@@ -40,6 +40,8 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
   projectedReadiness,
 }) => {
   const [hoveredPoint, setHoveredPoint] = useState<TrajectoryPoint | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState<TrajectoryPoint | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Map student current grade to milestone index (0 to 7)
   const currentGradeIndex =
@@ -72,22 +74,22 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
       semester: 'G9 Fall',
       grade: 'Grade 9',
       avg: 42,
-      benchmark: 'Highest honors course load; joined STEM / math club',
+      benchmark: 'Highest honors course load; joined STEM / math enrichment circle',
       action: 'Lock in unweighted 4.0 GPA; join high school competitive team',
     },
     {
       semester: 'G9 Spring',
       grade: 'Grade 9',
       avg: 48,
-      benchmark: 'First local science fair / AMC 10 participation; basic coding artifacts',
-      action: 'Complete independent inquiry; explore specialized MOOC coursework',
+      benchmark: 'First local science fair / AMC 10 participation; self-taught coding',
+      action: 'Complete independent inquiry; explore CS50x or specialized MOOCs',
     },
     {
       semester: 'G10 Fall',
       grade: 'Grade 10',
       avg: 58,
       benchmark: 'Regional competition honors; club executive role; AMC 10 score 95+',
-      action: 'Aim for AIME cutoff; build first public open-source project or app',
+      action: 'Target AIME cutoff; build first public open-source project or app',
     },
     {
       semester: 'G10 Spring',
@@ -99,53 +101,52 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
     {
       semester: 'G11 Fall',
       grade: 'Grade 11',
-      avg: 79,
-      benchmark: 'SAT 1550+ lockout; founded community initiative; national Olympiad qualifier',
-      action: 'Complete SAT/ACT lockout; scale community initiative to 500+ participants',
+      avg: 78,
+      benchmark: 'AIME qualifier (Score 6+); first-author preprint draft on arXiv',
+      action: 'Focus on primary preprint submission and national contest rounds',
     },
     {
       semester: 'G11 Spring',
       grade: 'Grade 11',
-      avg: 88,
-      benchmark: 'First-author paper draft submitted / ISEF finalist / flagship capstone',
-      action: 'Submit manuscript to peer-reviewed journal or arXiv; win state ISEF fair',
+      avg: 86,
+      benchmark: 'ISEF finalist / USAMO qualifier; selective summer institute admit',
+      action: 'Apply to RSI, Beaver Works, or SIMR; prepare standardized testing',
     },
     {
       semester: 'G12 Fall',
       grade: 'Grade 12',
       avg: 94,
-      benchmark: 'Early Action submission; stellar recommendation letters; primary spike narrative',
-      action: 'Assemble cohesive admissions dossier; draft distinctive essays',
+      benchmark: 'SlideRoom Maker Portfolio; technical recommendations secured',
+      action: 'Submit Early Action / Early Decision with polished technical dossier',
     },
     {
       semester: 'G12 Spring',
       grade: 'Grade 12',
-      avg: 96,
-      benchmark: 'Admitted student profile tier; final senior capstone transition',
-      action: 'Maintain academic excellence; finalize university matriculation',
+      avg: 98,
+      benchmark: 'Senior capstone deployed; mentorship transition; Top tier admission',
+      action: 'Maintain academic momentum; prepare scholarship and honors submissions',
     },
   ];
 
-  // Construct trajectory data points
+  // Synthesize points with student's current baseline & projected curve
   const points: TrajectoryPoint[] = rawMilestones.map((m, idx) => {
     const averageScore = Math.round(m.avg * tierTargetMultiplier);
-    let aspirantScore: number;
     const isProjected = idx > currentGradeIndex;
+    let aspirantScore = 0;
 
     if (idx <= currentGradeIndex) {
-      // Historical curve leading up to current baseline
-      const fraction = (idx + 1) / (currentGradeIndex + 1);
-      aspirantScore = Math.round(35 + (baselineReadiness - 35) * fraction);
+      const progressRatio = (idx + 1) / (currentGradeIndex + 1);
+      aspirantScore = Math.round(baselineReadiness * (0.6 + 0.4 * progressRatio));
+      if (idx === currentGradeIndex) aspirantScore = baselineReadiness;
     } else {
-      // Projected path after current grade
-      const remainingSteps = 7 - currentGradeIndex;
-      const stepIdx = idx - currentGradeIndex;
-      const fraction = stepIdx / remainingSteps;
-      aspirantScore = Math.round(baselineReadiness + (projectedReadiness - baselineReadiness) * fraction);
+      const remainingSteps = Math.max(1, rawMilestones.length - 1 - currentGradeIndex);
+      const stepIndex = idx - currentGradeIndex;
+      const scoreGain = projectedReadiness - baselineReadiness;
+      aspirantScore = Math.round(baselineReadiness + (scoreGain * stepIndex) / remainingSteps);
     }
 
     return {
-      id: `pt-${idx}`,
+      id: `pt-${m.semester}`,
       semester: m.semester,
       grade: m.grade,
       averageScore,
@@ -158,6 +159,31 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
 
   const currentPoint = points[currentGradeIndex];
   const currentGap = currentPoint.averageScore - currentPoint.aspirantScore;
+
+  // Active point to inspect: active on hover or explicit selection only (prevents flickering)
+  const activeInspectorPoint = hoveredPoint || selectedPoint;
+
+  // Stable hover handlers with 200ms debounce to eliminate pointer flicker
+  const handlePointMouseEnter = (pt: TrajectoryPoint) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    setHoveredPoint(pt);
+  };
+
+  const handlePointMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredPoint(null);
+    }, 200);
+  };
+
+  const handlePointClick = (pt: TrajectoryPoint) => {
+    setSelectedPoint((prev) => (prev?.id === pt.id ? null : pt));
+  };
 
   // SVG Chart Geometry
   const width = 800;
@@ -173,14 +199,12 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
   const getY = (score: number) => padding.top + (1 - (score - minScore) / (maxScore - minScore)) * graphHeight;
 
   // Build SVG path strings
-  // 1. Average line
   const averagePathD = points.reduce((acc, pt, idx) => {
     const x = getX(idx);
     const y = getY(pt.averageScore);
     return idx === 0 ? `M ${x} ${y}` : `${acc} L ${x} ${y}`;
   }, '');
 
-  // 2. Aspirant Solid path (up to current grade)
   const aspirantSolidPoints = points.slice(0, currentGradeIndex + 1);
   const aspirantSolidPathD = aspirantSolidPoints.reduce((acc, pt, idx) => {
     const x = getX(idx);
@@ -188,7 +212,6 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
     return idx === 0 ? `M ${x} ${y}` : `${acc} L ${x} ${y}`;
   }, '');
 
-  // 3. Aspirant Projected path (from current grade onward)
   const aspirantProjectedPoints = points.slice(currentGradeIndex);
   const aspirantProjectedPathD = aspirantProjectedPoints.reduce((acc, pt, idx) => {
     const x = getX(currentGradeIndex + idx);
@@ -196,10 +219,8 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
     return idx === 0 ? `M ${x} ${y}` : `${acc} L ${x} ${y}`;
   }, '');
 
-  // Area under average path for subtle fill
   const averageAreaD = `${averagePathD} L ${getX(points.length - 1)} ${padding.top + graphHeight} L ${getX(0)} ${padding.top + graphHeight} Z`;
 
-  // Coordinates of student current point
   const currentX = getX(currentGradeIndex);
   const currentY = getY(currentPoint.aspirantScore);
   const avgCurrentY = getY(currentPoint.averageScore);
@@ -218,7 +239,7 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
             Admissions Readiness 2-Line Trajectory Chart
           </h3>
           <p className="text-xs sm:text-sm text-stone-600 mt-1">
-            Empirical journey of {targetRankTier} admitted candidates vs. <strong className="text-stone-900">{studentName}</strong>'s current milestone and projected path.
+            Empirical journey of {targetRankTier} admitted candidates vs. <strong className="text-stone-900">{studentName}</strong>'s current standing and tentative back-engineered path. Hover or click any milestone point below to inspect benchmark criteria.
           </p>
         </div>
 
@@ -276,7 +297,7 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
         </div>
       </div>
 
-      {/* SVG Interactive Chart */}
+      {/* SVG Interactive Chart with Stable Invisible Hit Targets */}
       <div className="relative w-full overflow-x-auto bg-stone-950 rounded-xl p-4 sm:p-6 shadow-inner border border-stone-800">
         <svg
           viewBox={`0 0 ${width} ${height}`}
@@ -285,13 +306,13 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
           <defs>
             {/* Shaded Area Gradients */}
             <linearGradient id="averageAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
               <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
             </linearGradient>
 
             <linearGradient id="aspirantLineGrad" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#6366f1" />
-              <stop offset="100%" stopColor="#818cf8" />
+              <stop offset="0%" stopColor="#d6d3d1" />
+              <stop offset="100%" stopColor="#ffffff" />
             </linearGradient>
 
             <linearGradient id="averageLineGrad" x1="0" y1="0" x2="1" y2="0">
@@ -300,9 +321,9 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
               <stop offset="100%" stopColor="#34d399" />
             </linearGradient>
 
-            {/* Glowing filter for the blinking beacon */}
+            {/* Subtle glow filter */}
             <filter id="beaconGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
               <feMerge>
                 <feMergeNode in="coloredBlur" />
                 <feMergeNode in="SourceGraphic" />
@@ -314,13 +335,13 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
           {[30, 50, 70, 90].map((score) => {
             const y = getY(score);
             return (
-              <g key={score}>
+              <g key={score} className="pointer-events-none">
                 <line
                   x1={padding.left}
                   y1={y}
                   x2={width - padding.right}
                   y2={y}
-                  stroke="#334155"
+                  stroke="#292524"
                   strokeDasharray="4 4"
                   strokeWidth="1"
                 />
@@ -328,9 +349,9 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
                   x={padding.left - 10}
                   y={y + 4}
                   textAnchor="end"
-                  fill="#64748b"
+                  fill="#78716c"
                   fontSize="10"
-                  fontFamily="sans-serif"
+                  fontFamily="monospace"
                 >
                   {score}%
                 </text>
@@ -339,16 +360,17 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
           })}
 
           {/* Shaded Area for Average Line */}
-          <path d={averageAreaD} fill="url(#averageAreaGrad)" />
+          <path d={averageAreaD} fill="url(#averageAreaGrad)" className="pointer-events-none" />
 
           {/* Line 1: Average Admitted Candidate Journey */}
           <path
             d={averagePathD}
             fill="none"
             stroke="url(#averageLineGrad)"
-            strokeWidth="3.5"
+            strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
+            className="pointer-events-none"
           />
 
           {/* Line 2A: Aspiring Student Historical / Current Solid Line */}
@@ -356,20 +378,22 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
             d={aspirantSolidPathD}
             fill="none"
             stroke="url(#aspirantLineGrad)"
-            strokeWidth="4"
+            strokeWidth="3.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            className="pointer-events-none"
           />
 
           {/* Line 2B: Aspiring Student Projected Tentative Dashed Path */}
           <path
             d={aspirantProjectedPathD}
             fill="none"
-            stroke="#818cf8"
-            strokeWidth="3"
+            stroke="#a8a29e"
+            strokeWidth="2.5"
             strokeDasharray="6 6"
             strokeLinecap="round"
             strokeLinejoin="round"
+            className="pointer-events-none"
           />
 
           {/* Vertical Gap Connector Line between Student Blinking Dot and Average Line */}
@@ -378,153 +402,191 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
             y1={currentY}
             x2={currentX}
             y2={avgCurrentY}
-            stroke="#f59e0b"
-            strokeWidth="2.5"
+            stroke="#d97706"
+            strokeWidth="2"
             strokeDasharray="4 3"
+            className="pointer-events-none"
           />
 
           {/* Gap Delta Callout Tag on Chart */}
-          <g transform={`translate(${currentX + 10}, ${(currentY + avgCurrentY) / 2})`}>
+          <g
+            transform={`translate(${currentX + 10}, ${(currentY + avgCurrentY) / 2})`}
+            className="pointer-events-none"
+          >
             <rect
               x="-4"
               y="-12"
-              width="80"
+              width="84"
               height="22"
-              rx="6"
-              fill="#78350f"
-              stroke="#f59e0b"
+              rx="4"
+              fill="#292524"
+              stroke="#d97706"
               strokeWidth="1"
             />
-            <text x="36" y="2" textAnchor="middle" fill="#fef3c7" fontSize="10" fontWeight="bold">
+            <text x="38" y="2" textAnchor="middle" fill="#fef3c7" fontSize="10" fontFamily="monospace" fontWeight="bold">
               Δ -{currentGap} pts Gap
             </text>
           </g>
 
-          {/* Average Line Milestone Dots */}
+          {/* Milestone Hover Guideline */}
+          {activeInspectorPoint && (
+            <line
+              x1={getX(points.findIndex((p) => p.id === activeInspectorPoint.id))}
+              y1={padding.top}
+              x2={getX(points.findIndex((p) => p.id === activeInspectorPoint.id))}
+              y2={padding.top + graphHeight}
+              stroke="#f59e0b"
+              strokeWidth="1.5"
+              strokeDasharray="3 3"
+              opacity="0.7"
+              className="pointer-events-none"
+            />
+          )}
+
+          {/* Average Line Milestone Dots (Visual) */}
           {points.map((pt, idx) => {
             const x = getX(idx);
             const y = getY(pt.averageScore);
+            const isHovered = activeInspectorPoint?.id === pt.id;
             return (
-              <circle
-                key={`avg-pt-${idx}`}
-                cx={x}
-                cy={y}
-                r="4"
-                fill="#10b981"
-                stroke="#064e3b"
-                strokeWidth="1.5"
-              />
+              <g key={`avg-pt-${idx}`} className="pointer-events-none">
+                {isHovered && (
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={9}
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    opacity={0.65}
+                  />
+                )}
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={isHovered ? 6 : 4}
+                  fill="#10b981"
+                  stroke="#064e3b"
+                  strokeWidth={isHovered ? 2.5 : 1.5}
+                  className="transition-all duration-150"
+                />
+              </g>
             );
           })}
 
-          {/* Student Line Milestone Dots */}
+          {/* Student Line Milestone Dots (Visual) */}
           {points.map((pt, idx) => {
             const x = getX(idx);
             const y = getY(pt.aspirantScore);
             const isCurrent = idx === currentGradeIndex;
             const isPast = idx < currentGradeIndex;
+            const isHovered = activeInspectorPoint?.id === pt.id;
 
             if (isCurrent) return null; // Rendered as special beacon below
 
             return (
-              <circle
-                key={`asp-pt-${idx}`}
-                cx={x}
-                cy={y}
-                r={isPast ? 4 : 3.5}
-                fill={isPast ? '#6366f1' : '#1e1b4b'}
-                stroke="#818cf8"
-                strokeWidth={isPast ? 2 : 1.5}
-                strokeDasharray={isPast ? 'none' : '2 2'}
-                className="cursor-pointer"
-                onMouseEnter={() => setHoveredPoint(pt)}
-                onMouseLeave={() => setHoveredPoint(null)}
-              />
+              <g key={`asp-pt-${idx}`} className="pointer-events-none">
+                {isHovered && (
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r={9}
+                    fill="none"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    opacity={0.65}
+                  />
+                )}
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={isHovered ? 6 : isPast ? 4 : 3.5}
+                  fill={isPast ? '#ffffff' : '#1c1917'}
+                  stroke={isHovered ? '#f59e0b' : '#a8a29e'}
+                  strokeWidth={isHovered ? 2.5 : isPast ? 2 : 1.5}
+                  strokeDasharray={isPast ? 'none' : '2 2'}
+                  className="transition-all duration-150"
+                />
+              </g>
             );
           })}
 
-          {/* THE BLINKING DOT (Beacon on Student Current Line Position) */}
-          <g transform={`translate(${currentX}, ${currentY})`}>
+          {/* THE BLINKING BEACON (Current Student Position Visual) */}
+          <g transform={`translate(${currentX}, ${currentY})`} className="pointer-events-none">
             {/* Outer Pulsing Glow Wave */}
             <circle
               cx="0"
               cy="0"
-              r="18"
+              r="16"
               fill="none"
-              stroke="#818cf8"
-              strokeWidth="2"
-              opacity="0.6"
+              stroke="#d97706"
+              strokeWidth="1.5"
+              opacity="0.5"
               className="animate-ping"
             />
             {/* Second Pulsing Ring */}
             <circle
               cx="0"
               cy="0"
-              r="12"
-              fill="#6366f1"
-              opacity="0.3"
+              r="10"
+              fill="#d97706"
+              opacity="0.25"
               className="animate-pulse"
             />
-            {/* Core Blinking Dot with High-Intensity Filter */}
+            {/* Core Beacon Dot */}
             <circle
               cx="0"
               cy="0"
-              r="7"
+              r="6"
               fill="#ffffff"
-              stroke="#4f46e5"
-              strokeWidth="3.5"
+              stroke="#d97706"
+              strokeWidth="3"
               filter="url(#beaconGlow)"
-              className="cursor-pointer animate-pulse"
-              onMouseEnter={() => setHoveredPoint(currentPoint)}
-              onMouseLeave={() => setHoveredPoint(null)}
             />
 
             {/* "You Are Here" Floating Tag */}
-            <g transform="translate(0, -22)">
+            <g transform="translate(0, -20)">
               <rect
-                x="-52"
-                y="-14"
-                width="104"
-                height="20"
-                rx="10"
-                fill="#4f46e5"
-                stroke="#a5b4fc"
-                strokeWidth="1.5"
-                className="drop-shadow-lg"
+                x="-48"
+                y="-13"
+                width="96"
+                height="18"
+                rx="4"
+                fill="#1c1917"
+                stroke="#d97706"
+                strokeWidth="1"
               />
               <text
                 x="0"
                 y="0"
                 textAnchor="middle"
-                fill="#ffffff"
-                fontSize="10"
+                fill="#fef3c7"
+                fontSize="9"
+                fontFamily="monospace"
                 fontWeight="bold"
                 letterSpacing="0.5"
               >
-                📍 YOU ARE HERE
+                YOU ARE HERE
               </text>
             </g>
           </g>
 
-          {/* X-axis Semester Labels */}
+          {/* X-axis Semester Labels (Visual) */}
           {points.map((pt, idx) => {
             const x = getX(idx);
             const isCurrent = idx === currentGradeIndex;
+            const isHovered = activeInspectorPoint?.id === pt.id;
 
             return (
-              <g
-                key={pt.semester}
-                className="cursor-pointer"
-                onMouseEnter={() => setHoveredPoint(pt)}
-                onMouseLeave={() => setHoveredPoint(null)}
-              >
+              <g key={pt.semester} className="pointer-events-none">
                 <text
                   x={x}
                   y={height - 24}
                   textAnchor="middle"
-                  fill={isCurrent ? '#818cf8' : '#94a3b8'}
-                  fontSize={isCurrent ? '11' : '10'}
-                  fontWeight={isCurrent ? 'bold' : 'normal'}
+                  fill={isHovered ? '#fbbf24' : isCurrent ? '#ffffff' : '#a8a29e'}
+                  fontSize={isCurrent || isHovered ? '11' : '10'}
+                  fontWeight={isCurrent || isHovered ? 'bold' : 'normal'}
+                  fontFamily="monospace"
                 >
                   {pt.semester}
                 </text>
@@ -532,69 +594,131 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
                   x={x}
                   y={height - 10}
                   textAnchor="middle"
-                  fill="#64748b"
+                  fill="#78716c"
                   fontSize="9"
+                  fontFamily="monospace"
                 >
                   {pt.grade.replace('Grade ', 'G')}
                 </text>
               </g>
             );
           })}
+
+          {/* DEDICATED INVISIBLE HOVER HITBOXES & POINTER TARGETS (Rock-Solid Stability) */}
+          {points.map((pt, idx) => {
+            const x = getX(idx);
+            const avgY = getY(pt.averageScore);
+            const aspY = getY(pt.aspirantScore);
+
+            return (
+              <g
+                key={`hitbox-${pt.id}`}
+                className="cursor-pointer"
+                onMouseEnter={() => handlePointMouseEnter(pt)}
+                onMouseLeave={handlePointMouseLeave}
+                onClick={() => handlePointClick(pt)}
+              >
+                {/* Generous vertical column hitbox with pointer-events: all */}
+                <rect
+                  x={x - graphWidth / (points.length * 2)}
+                  y={padding.top}
+                  width={graphWidth / points.length}
+                  height={graphHeight + 30}
+                  fill="transparent"
+                  style={{ pointerEvents: 'all' }}
+                />
+                {/* Direct circular pointer targets over average and aspirant dots */}
+                <circle
+                  cx={x}
+                  cy={avgY}
+                  r={20}
+                  fill="transparent"
+                  style={{ pointerEvents: 'all' }}
+                />
+                <circle
+                  cx={x}
+                  cy={aspY}
+                  r={20}
+                  fill="transparent"
+                  style={{ pointerEvents: 'all' }}
+                />
+              </g>
+            );
+          })}
         </svg>
 
-        {/* Hovered Point Tooltip Overlay */}
-        {hoveredPoint && (
-          <div className="absolute top-4 right-4 bg-slate-800/95 backdrop-blur-md p-3.5 rounded-2xl border border-slate-700 text-white text-xs max-w-xs shadow-xl animate-fadeIn">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="font-bold text-indigo-300">{hoveredPoint.semester} ({hoveredPoint.grade})</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">
-                {hoveredPoint.isProjected ? 'Projected Step' : 'Current Track'}
+        {/* Stable Details Modal (Active on hover or locked selection only) */}
+        {activeInspectorPoint ? (
+          <div className="absolute top-4 right-4 bg-stone-900/95 backdrop-blur-md p-3.5 rounded-lg border border-amber-500/40 text-stone-100 text-xs max-w-xs shadow-2xl pointer-events-none transition-all duration-150">
+            <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-stone-800">
+              <span className="font-mono font-bold text-amber-400">
+                {activeInspectorPoint.semester} ({activeInspectorPoint.grade})
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-800 text-stone-300">
+                {selectedPoint?.id === activeInspectorPoint.id
+                  ? 'Locked Pin'
+                  : activeInspectorPoint.isProjected
+                  ? 'Projected Step'
+                  : 'Current Stage'}
               </span>
             </div>
-            <div className="space-y-1 text-[11px] mb-2">
+
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-mono mb-2">
               <div className="text-emerald-400">
-                <strong>Admitted Avg Score:</strong> {hoveredPoint.averageScore}%
+                <span className="text-stone-400 block text-[10px]">Admitted Avg:</span>
+                <span className="font-bold">{activeInspectorPoint.averageScore}%</span>
               </div>
-              <div className="text-indigo-300">
-                <strong>{studentName}'s Score:</strong> {hoveredPoint.aspirantScore}%
+              <div className="text-stone-200">
+                <span className="text-stone-400 block text-[10px]">{studentName}:</span>
+                <span className="font-bold">{activeInspectorPoint.aspirantScore}%</span>
               </div>
             </div>
-            <div className="pt-1.5 border-t border-slate-700 text-[11px] text-slate-300">
-              <span className="text-slate-400 font-semibold">Admitted Benchmark:</span> {hoveredPoint.benchmarkMilestone}
+
+            <div className="pt-1 border-t border-stone-800 text-[11px] text-stone-300 leading-snug">
+              <strong className="text-amber-300">• Benchmark: </strong>
+              {activeInspectorPoint.benchmarkMilestone}
             </div>
+            <div className="pt-1 text-[10px] text-stone-400 leading-snug">
+              <strong className="text-stone-300">• Suggested Action: </strong>
+              {activeInspectorPoint.suggestedAction}
+            </div>
+          </div>
+        ) : (
+          <div className="absolute top-4 right-4 bg-stone-900/50 backdrop-blur-xs px-3 py-1.5 rounded-lg border border-stone-800/80 text-[11px] font-mono text-stone-400 pointer-events-none">
+            Hover over any milestone pointer to inspect benchmark criteria
           </div>
         )}
       </div>
 
-      {/* Trajectory Key Insight Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
-          <div className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            Foundation Phase (G9)
+      {/* Trajectory Key Insight Cards (Clean Editorial Whitepaper Memo) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 text-xs">
+        <div className="p-3.5 rounded-xl bg-stone-50/70 border border-stone-200 space-y-1">
+          <div className="font-semibold text-stone-900 flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+            <span>Foundation Phase (G9)</span>
           </div>
-          <p className="text-slate-600 text-[11px] leading-relaxed">
-            Average admits establish unshakeable GPA rigor early (3.95+ UW) and start foundational Olympiad/competition training.
+          <p className="text-stone-600 text-[11px] leading-relaxed">
+            Admitted candidates establish an unshakeable GPA rigor baseline early (3.95+ unweighted) and start foundational Olympiad and contest benchmarking.
           </p>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200 text-xs">
-          <div className="font-bold text-indigo-950 mb-1 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-indigo-600" />
-            Inflection Point (G10–G11)
+        <div className="p-3.5 rounded-xl bg-stone-50/70 border border-stone-200 space-y-1">
+          <div className="font-semibold text-stone-900 flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-stone-700" />
+            <span>Inflection Point (G10–G11)</span>
           </div>
-          <p className="text-indigo-900 text-[11px] leading-relaxed">
-            This is where candidate trajectories diverge: top admits transition from club members to lab apprentices and original paper authors.
+          <p className="text-stone-600 text-[11px] leading-relaxed">
+            Where trajectories diverge: top admits transition from school club members to faculty lab apprentices, producing their first independent preprints.
           </p>
         </div>
 
-        <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
-          <div className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
-            <Target className="w-4 h-4 text-amber-600" />
-            The Closing Target (G12)
+        <div className="p-3.5 rounded-xl bg-stone-50/70 border border-stone-200 space-y-1">
+          <div className="font-semibold text-stone-900 flex items-center gap-1.5">
+            <Target className="w-4 h-4 text-amber-700" />
+            <span>Target Zone (G12)</span>
           </div>
-          <p className="text-slate-600 text-[11px] leading-relaxed">
-            Executing the supercurricular milestones below bridges the current {currentGap} pt gap to reach the 90%+ target admitted tier.
+          <p className="text-stone-600 text-[11px] leading-relaxed">
+            Executing the phased supercurricular blueprint closes the current {currentGap} pt deficit to reach the 90%+ readiness threshold for {targetRankTier}.
           </p>
         </div>
       </div>

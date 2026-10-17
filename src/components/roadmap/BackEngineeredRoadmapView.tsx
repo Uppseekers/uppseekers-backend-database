@@ -32,6 +32,7 @@ import { AspiringStudentUploader } from './AspiringStudentUploader';
 import { TrajectoryTwoLineChart } from './TrajectoryTwoLineChart';
 import { SupercurricularMilestonesView } from './SupercurricularMilestonesView';
 import { UniversityAdmissionsSummary } from './UniversityAdmissionsSummary';
+import { LookalikeAdmittedStudents } from './LookalikeAdmittedStudents';
 
 interface BackEngineeredRoadmapViewProps {
   cohort1500: AdmittedStudentProfile[];
@@ -53,6 +54,7 @@ const TIER_OPTIONS: {
 
 export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps> = ({
   cohort1500,
+  onInspectStudent,
 }) => {
   // Aspiring student target and baseline profile
   const [target, setTarget] = useState<AspiringStudentTarget>(
@@ -638,7 +640,15 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
         projectedReadiness={pathData.projectedReadinessScore}
       />
 
-      {/* SECTION 5: DETAILED SUPERCURRICULAR MILESTONES ACTION PLAN */}
+      {/* SECTION 5: ADMITTED STUDENT LOOK-ALIKES & EMPIRICAL BLUEPRINTS */}
+      <LookalikeAdmittedStudents
+        cohort={cohort1500}
+        target={target}
+        baseline={baseline}
+        onInspectStudent={onInspectStudent}
+      />
+
+      {/* SECTION 6: DETAILED SUPERCURRICULAR MILESTONES ACTION PLAN */}
       <SupercurricularMilestonesView
         currentGrade={target.currentGrade}
         targetRankTier={target.targetRankTier}

@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { StudentProfile } from '../types';
 import { evaluateStudent, StudentEvaluation } from '../utils/studentEvaluation';
 import { BlurredName } from './BlurredName';
-import { Info, Sparkles } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface SpiderChartProps {
   students: StudentProfile[];
   height?: number;
+  size?: number;
   highlightedStudentId?: string | null;
   onHoverStudent?: (studentId: string | null) => void;
   interactive?: boolean;
@@ -47,6 +48,7 @@ export const STUDENT_COLORS = [
 
 export const SpiderChart: React.FC<SpiderChartProps> = ({
   students,
+  size: customSize,
   highlightedStudentId,
   onHoverStudent,
   interactive = true,
@@ -61,7 +63,46 @@ export const SpiderChart: React.FC<SpiderChartProps> = ({
     color: string;
   } | null>(null);
 
+  const [hoveredPointKey, setHoveredPointKey] = useState<string | null>(null);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const [activeStudentFilter, setActiveStudentFilter] = useState<string | null>(null);
+
+  const handlePointEnter = (
+    e: React.MouseEvent,
+    dim: { label: string; score: number; evidence: string },
+    student: StudentProfile,
+    colorStroke: string,
+    key: string
+  ) => {
+    if (!interactive) return;
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+      tooltipTimeoutRef.current = null;
+    }
+    setHoveredPointKey(key);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setActiveTooltip({
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+      dimension: dim.label,
+      score: dim.score,
+      studentName: student.name,
+      evidence: dim.evidence,
+      color: colorStroke,
+    });
+  };
+
+  const handlePointLeave = () => {
+    if (!interactive) return;
+    if (tooltipTimeoutRef.current) {
+      clearTimeout(tooltipTimeoutRef.current);
+    }
+    tooltipTimeoutRef.current = setTimeout(() => {
+      setActiveTooltip(null);
+      setHoveredPointKey(null);
+    }, 180);
+  };
 
   if (students.length === 0) {
     return (
@@ -83,9 +124,9 @@ export const SpiderChart: React.FC<SpiderChartProps> = ({
   const totalAxes = dimensions.length;
 
   // Chart Geometry
-  const size = 460;
+  const size = customSize || 460;
   const center = size / 2;
-  const maxRadius = 150;
+  const maxRadius = Math.round(size * 0.326);
   const levels = [20, 40, 60, 80, 100];
 
   // Helper: calculate coordinates for a given angle and radius
@@ -268,37 +309,55 @@ export const SpiderChart: React.FC<SpiderChartProps> = ({
                   style={{ filter: isHovered ? 'drop-shadow(0 2px 8px rgba(0,0,0,0.12))' : 'none' }}
                 />
 
-                {/* Data Vertex Nodes */}
+                {/* Data Vertex Nodes with Generous Hit Targets & Rock-Solid Hover Stability */}
                 {ev.dimensions.map((dim, idx) => {
                   const { x, y } = getCoordinates(idx, dim.score);
+                  const pointKey = `pt-${student.id}-${dim.key}`;
+                  const isPointActive = hoveredPointKey === pointKey;
+
                   return (
-                    <circle
-                      key={`pt-${student.id}-${dim.key}`}
-                      cx={x}
-                      cy={y}
-                      r={isHovered ? 4.5 : 3.5}
-                      fill="#ffffff"
-                      stroke={color.stroke}
-                      strokeWidth={isHovered ? 2.5 : 1.8}
-                      className="cursor-pointer transition-transform hover:scale-150"
-                      onMouseEnter={(e) => {
-                        if (!interactive) return;
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        setActiveTooltip({
-                          x: rect.left + rect.width / 2,
-                          y: rect.top,
-                          dimension: dim.label,
-                          score: dim.score,
-                          studentName: student.name,
-                          evidence: dim.evidence,
-                          color: color.stroke,
-                        });
-                      }}
-                      onMouseLeave={() => {
-                        if (!interactive) return;
-                        setActiveTooltip(null);
-                      }}
-                    />
+                    <g
+                      key={pointKey}
+                      className="cursor-pointer"
+                      onMouseEnter={(e) =>
+                        handlePointEnter(e, dim, student, color.stroke, pointKey)
+                      }
+                      onMouseLeave={handlePointLeave}
+                    >
+                      {/* Generous invisible hit zone (32px diameter) with pointer-events: all */}
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r={16}
+                        fill="transparent"
+                        style={{ pointerEvents: 'all' }}
+                      />
+
+                      {/* Active highlight ring when hovered */}
+                      {isPointActive && (
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r={8}
+                          fill="none"
+                          stroke={color.stroke}
+                          strokeWidth={2}
+                          opacity={0.65}
+                          className="pointer-events-none"
+                        />
+                      )}
+
+                      {/* Visual node circle - NO scale-150 transform, completely stable */}
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r={isPointActive ? 5 : isHovered ? 4.5 : 3.5}
+                        fill="#ffffff"
+                        stroke={color.stroke}
+                        strokeWidth={isPointActive ? 3 : isHovered ? 2.5 : 1.8}
+                        className="pointer-events-none transition-all duration-150"
+                      />
+                    </g>
                   );
                 })}
               </g>
@@ -306,26 +365,26 @@ export const SpiderChart: React.FC<SpiderChartProps> = ({
           })}
         </svg>
 
-        {/* Dimension Hover Tooltip */}
+        {/* Dimension Hover Tooltip (Stable on hover only, pointer-events-none) */}
         {activeTooltip && (
           <div
-            className="fixed z-60 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-2 bg-slate-900/95 text-white px-3 py-2 rounded-xl text-xs shadow-xl backdrop-blur-xs max-w-xs border border-slate-700/80"
+            className="fixed z-60 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-2 bg-stone-900/95 text-white px-3 py-2 rounded-xl text-xs shadow-xl backdrop-blur-xs max-w-xs border border-stone-700/80 transition-opacity duration-150"
             style={{
               left: `${activeTooltip.x}px`,
-              top: `${activeTooltip.y - 8}px`,
+              top: `${activeTooltip.y - 10}px`,
             }}
           >
             <div className="flex items-center gap-1.5 font-bold mb-0.5" style={{ color: activeTooltip.color }}>
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: activeTooltip.color }} />
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: activeTooltip.color }} />
               <BlurredName fullName={activeTooltip.studentName} />
               <span className="text-white ml-auto font-mono text-[11px]">
                 {activeTooltip.score}/100
               </span>
             </div>
-            <div className="text-[11px] font-semibold text-slate-200">
+            <div className="text-[11px] font-semibold text-stone-200">
               {activeTooltip.dimension}
             </div>
-            <div className="text-[10px] text-slate-400 mt-1 leading-snug">
+            <div className="text-[10px] text-stone-400 mt-1 leading-snug">
               {activeTooltip.evidence}
             </div>
           </div>
