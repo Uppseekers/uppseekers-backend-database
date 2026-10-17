@@ -10,8 +10,16 @@ import { SyncSheetModal } from './components/SyncSheetModal';
 import { EditStudentModal } from './components/EditStudentModal';
 import { LoginScreen } from './components/LoginScreen';
 import { INITIAL_STUDENTS } from './initialData';
-import { StudentProfile, FilterState, AuthUser } from './types';
+import { StudentProfile, FilterState, AuthUser, AppTab, AdmittedStudentProfile } from './types';
 import { calculateProfileCompleteness } from './utils/workAnalyzer';
+import { NavigationTabs } from './components/NavigationTabs';
+import { BackEngineeredRoadmapView } from './components/roadmap/BackEngineeredRoadmapView';
+import { CompareLabView } from './components/comparison/CompareLabView';
+import {
+  getAdmittedCohort1500,
+  saveCustom1500Cohort,
+  resetDefault1500Cohort,
+} from './data/admittedStudents1500';
 import { GraduationCap, Users, Building2, SearchX, Shield, Star, Zap, Scale } from 'lucide-react';
 
 export default function App() {
@@ -144,6 +152,24 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile | null>(null);
 
+  // Active top-level navigation tab: 'database' | 'roadmap' | 'compare_lab' | 'cohort_1500'
+  const [activeTab, setActiveTab] = useState<AppTab>('database');
+
+  // 1,500 Global Admitted Students Cohort dataset
+  const [admittedCohort1500, setAdmittedCohort1500] = useState<AdmittedStudentProfile[]>(() => {
+    return getAdmittedCohort1500();
+  });
+
+  const handleUpdate1500Cohort = (newCohort: AdmittedStudentProfile[]) => {
+    saveCustom1500Cohort(newCohort);
+    setAdmittedCohort1500(newCohort);
+  };
+
+  const handleReset1500Cohort = () => {
+    resetDefault1500Cohort();
+    setAdmittedCohort1500(getAdmittedCohort1500());
+  };
+
   // Candidate Comparison State (up to 3 profiles)
   const [comparedStudentIds, setComparedStudentIds] = useState<string[]>(() => {
     try {
@@ -198,10 +224,11 @@ export default function App() {
   };
 
   const comparedStudents = useMemo(() => {
+    const combined = [...students, ...admittedCohort1500];
     return comparedStudentIds
-      .map((id) => students.find((s) => s.id === id))
+      .map((id) => combined.find((s) => s.id === id))
       .filter((s): s is StudentProfile => Boolean(s));
-  }, [comparedStudentIds, students]);
+  }, [comparedStudentIds, students, admittedCohort1500]);
 
   const handleOpenEdit = (student: StudentProfile) => {
     setEditingStudent(student);
@@ -427,7 +454,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col text-slate-900 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#FAF9F5] flex flex-col text-stone-900 font-sans antialiased selection:bg-stone-800 selection:text-white">
       {/* Primary Navigation Bar with View Mode Toggle and Authenticated User */}
       <Navbar
         totalCount={students.length}
@@ -439,122 +466,151 @@ export default function App() {
         onOpenSyncModal={() => setIsSyncModalOpen(true)}
         onAddNewStudent={handleAddNewStudent}
         comparedCount={comparedStudentIds.length}
-        onOpenComparison={() => setIsComparisonModalOpen(true)}
+        onOpenComparison={() => setActiveTab('compare_lab')}
+      />
+
+      {/* Top Level Navigation Tabs: Database, Pathfinder & Gap Analysis, Compare Lab */}
+      <NavigationTabs
+        currentTab={activeTab}
+        onTabChange={setActiveTab}
+        databaseCount={students.length}
+        comparedCount={comparedStudentIds.length}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Page Top Heading & Scope Description */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800">
-                Student Directory Portal
-              </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-200">
-                <Zap className="w-3 h-3 mr-1 text-amber-600" />
-                Work-Rich Profiles Upwards
-              </span>
+        {/* TAB 1: STUDENT PROFILES DATABASE (Original Cohort) */}
+        {activeTab === 'database' && (
+          <>
+            {/* Page Top Heading & Scope Description */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 pb-4 border-b border-stone-200">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono text-stone-500 uppercase tracking-wider mb-1">
+                  <span>Student Directory Portal</span>
+                  <span>·</span>
+                  <span>Work-Rich Profiles Ranked First</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-stone-900">
+                  Student Profiles & Portfolios
+                </h1>
+                <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-2xl leading-relaxed">
+                  Explore student credentials, academic standing, research initiatives, work experience,
+                  and honors. Profiles with verified non-academic depth are indexed and highlighted.
+                </p>
+              </div>
+
+              {/* Quick Metrics Badges */}
+              <div className="flex items-center gap-2 flex-wrap font-mono text-xs">
+                <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-lg border border-stone-200 shadow-2xs text-stone-700">
+                  <Users className="w-3.5 h-3.5 text-stone-600" />
+                  <span>{students.length} Candidates</span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-lg border border-stone-200 shadow-2xs text-stone-700">
+                  <Star className="w-3.5 h-3.5 text-stone-600" />
+                  <span>{aggregateStats.standoutCount} Standout Portfolios</span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-lg border border-stone-200 shadow-2xs text-stone-700">
+                  <Building2 className="w-3.5 h-3.5 text-stone-600" />
+                  <span>{availableUniversities.length} Institutions</span>
+                </div>
+              </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-              Student Profiles & Portfolios
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl leading-relaxed">
-              Explore student credentials, academic standing, research initiatives, work experience,
-              and awards. Profiles with rich experience and achievements are highlighted and ranked upwards.
-            </p>
-          </div>
 
-          {/* Quick Metrics Badges */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs text-xs font-semibold text-slate-700">
-              <Users className="w-4 h-4 text-indigo-600" />
-              <span>{students.length} Candidates</span>
-            </div>
+            {/* Primary Filter Bar (Class of, University Name, Search, and Ranking) */}
+            <FilterBar
+              filters={filters}
+              onFilterChange={setFilters}
+              availableUniversities={availableUniversities}
+              availableClasses={availableClasses}
+              totalResults={filteredStudents.length}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+            />
 
-            <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-amber-200/90 shadow-2xs text-xs font-semibold text-amber-900">
-              <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-              <span>{aggregateStats.standoutCount} Standout Work</span>
-            </div>
-
-            <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs text-xs font-semibold text-slate-700">
-              <Building2 className="w-4 h-4 text-blue-600" />
-              <span>{availableUniversities.length} Universities</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Primary Filter Bar (Class of, University Name, Search, and Ranking) */}
-        <FilterBar
-          filters={filters}
-          onFilterChange={setFilters}
-          availableUniversities={availableUniversities}
-          availableClasses={availableClasses}
-          totalResults={filteredStudents.length}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
-
-        {/* Content Area: Grid or Table */}
-        {filteredStudents.length > 0 ? (
-          viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredStudents.map(student => (
-                <StudentCard
-                  key={student.id}
-                  student={student}
+            {/* Content Area: Grid or Table */}
+            {filteredStudents.length > 0 ? (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {filteredStudents.map((student) => (
+                    <StudentCard
+                      key={student.id}
+                      student={student}
+                      onSelect={setSelectedStudent}
+                      onEdit={handleOpenEdit}
+                      isAdmin={authUser?.isAdmin}
+                      isCompared={comparedStudentIds.includes(student.id)}
+                      onToggleCompare={handleToggleCompare}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <TableView
+                  students={filteredStudents}
                   onSelect={setSelectedStudent}
                   onEdit={handleOpenEdit}
                   isAdmin={authUser?.isAdmin}
-                  isCompared={comparedStudentIds.includes(student.id)}
+                  comparedStudentIds={comparedStudentIds}
                   onToggleCompare={handleToggleCompare}
                 />
-              ))}
-            </div>
-          ) : (
-            <TableView
-              students={filteredStudents}
-              onSelect={setSelectedStudent}
-              onEdit={handleOpenEdit}
-              isAdmin={authUser?.isAdmin}
-              comparedStudentIds={comparedStudentIds}
-              onToggleCompare={handleToggleCompare}
-            />
-          )
-        ) : (
-          /* Empty Search State */
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-lg mx-auto shadow-xs">
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400 mb-4">
-              <SearchX className="w-7 h-7" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-1">No Student Profiles Found</h3>
-            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-              No student profiles match your current combination of Class of, University Name, or search keyword.
-            </p>
-            <button
-              type="button"
-              id="reset-all-filters-btn"
-              onClick={() =>
-                setFilters({
-                  classOf: 'ALL',
-                  university: 'ALL',
-                  searchQuery: '',
-                  sortBy: 'details',
-                  onlyWithStandouts: false,
-                })
-              }
-              className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs"
-            >
-              Reset All Filters
-            </button>
-          </div>
+              )
+            ) : (
+              /* Empty Search State */
+              <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-lg mx-auto shadow-xs">
+                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400 mb-4">
+                  <SearchX className="w-7 h-7" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">No Student Profiles Found</h3>
+                <p className="text-xs text-slate-500 mb-5 leading-relaxed">
+                  No student profiles match your current combination of Class of, University Name, or search keyword.
+                </p>
+                <button
+                  type="button"
+                  id="reset-all-filters-btn"
+                  onClick={() =>
+                    setFilters({
+                      classOf: 'ALL',
+                      university: 'ALL',
+                      searchQuery: '',
+                      sortBy: 'details',
+                      onlyWithStandouts: false,
+                    })
+                  }
+                  className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-xs"
+                >
+                  Reset All Filters
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* TAB 2: BACK-ENGINEERED ROADMAP & PATHFINDER */}
+        {activeTab === 'roadmap' && (
+          <BackEngineeredRoadmapView
+            cohort1500={admittedCohort1500}
+            onInspectStudent={(student) => setSelectedStudent(student)}
+          />
+        )}
+
+        {/* TAB 3: ADMISSIONS COMPARE & BENCHMARKING LAB */}
+        {activeTab === 'compare_lab' && (
+          <CompareLabView
+            allStudents={[...students, ...admittedCohort1500]}
+            comparedStudents={comparedStudents}
+            onAddStudent={handleAddCompareStudent}
+            onRemoveStudent={handleRemoveCompareStudent}
+            onClearAll={handleClearCompare}
+            onSelectStudentForDetail={(student) => setSelectedStudent(student)}
+          />
         )}
       </main>
 
       {/* Floating Comparison Dock (visible when profiles are selected for comparison) */}
       <ComparisonDock
         selectedStudents={comparedStudents}
-        onOpenComparison={() => setIsComparisonModalOpen(true)}
+        onOpenComparison={() => setActiveTab('compare_lab')}
         onRemoveStudent={handleRemoveCompareStudent}
         onClearAll={handleClearCompare}
       />
