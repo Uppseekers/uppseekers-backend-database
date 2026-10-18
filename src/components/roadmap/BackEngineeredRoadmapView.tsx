@@ -115,12 +115,20 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
     notes: '',
   };
 
-  // Required Profile Calibration (Calibrated per Tier from thousands of admitted students)
+  // Required Profile Calibration (Calibrated per Tier & Discipline from thousands of admitted students)
   const requiredProfile = useMemo(() => {
     const isTop5 = target.targetRankTier === 'Top 5';
     const isTop10 = target.targetRankTier === 'Top 10' || isTop5;
     const isTop25 = target.targetRankTier === 'Top 25';
     const isTop50 = target.targetRankTier === 'Top 50';
+
+    const f = target.targetField.toLowerCase();
+    const isCS = f.includes('cs') || f.includes('computer') || f.includes('software');
+    const isEngineering = !isCS && (f.includes('engineer') || f.includes('robot') || f.includes('aerospace'));
+    const isPreMed = f.includes('pre-med') || f.includes('med') || f.includes('bio') || f.includes('health');
+    const isEcon = f.includes('econ') || f.includes('finance') || f.includes('business') || f.includes('quant');
+    const isLaw = f.includes('law') || f.includes('policy') || f.includes('relation') || f.includes('gov') || f.includes('history') || f.includes('humanit');
+    const isPhysicsMath = f.includes('phys') || f.includes('math');
 
     return {
       academicBar: isTop5
@@ -133,7 +141,7 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
         ? 'Unweighted GPA 3.85+ with 4–6 rigorous honors or AP/IB coursework'
         : 'Unweighted GPA 3.80+ with solid college preparatory core',
       testingBar: isTop5
-        ? 'SAT: 1540–1600 (Math 790+) or ACT: 35–36'
+        ? 'SAT: 1540–1600 (Math 790+ for STEM, ERW 770+ for Humanities) or ACT: 35–36'
         : isTop10
         ? 'SAT: 1520–1580 (Math 780+) or ACT: 34–36'
         : isTop25
@@ -142,49 +150,151 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
         ? 'SAT: 1420–1510 or ACT: 31–34'
         : 'SAT: 1360–1460 or ACT: 29–32',
       supercurriculars: {
-        research: isTop5
-          ? 'First-author or primary contributor on preprint (arXiv/bioRxiv) or ISEF Grand Award finalist'
+        research: isPreMed
+          ? isTop5
+            ? 'First-author or primary contributor on preprint (bioRxiv/PubMed) or ISEF Grand Award finalist in Cellular/Genomic Biology'
+            : isTop10
+            ? 'Structured laboratory paper under university medical faculty or regional ISEF award in Biochemistry'
+            : 'Independent inquiry paper, clinical review, or local science fair finalist'
+          : isEcon
+          ? isTop5
+            ? 'Empirical econometric working paper on SSRN, National Economics Challenge finalist, or Federal Reserve Challenge presentation'
+            : isTop10
+            ? 'Quantitative financial research paper under faculty mentorship or state economics award'
+            : 'Independent market regression study or investment club research digest'
+          : isEngineering
+          ? isTop5
+            ? 'First-author paper (IEEE/arXiv), provisional patent application, or ISEF Grand Award in Engineering Mechanics / Robotics'
+            : isTop10
+            ? 'Working physical mechanism with CAD stress analyses under university engineering mentorship'
+            : 'Documented robotics capstone or local maker fair grand prize'
+          : isLaw
+          ? isTop5
+            ? 'Published 6,000-word treatise in The Concord Review, John Locke Global Essay distinction, or municipal policy whitepaper'
+            : isTop10
+            ? 'State student journalism award, National History Day state medal, or published civic editorial series'
+            : 'Independent policy brief or high school journal analytical essay'
+          : isPhysicsMath
+          ? isTop5
+            ? 'Theoretical physics/math preprint on arXiv, MIT PRIMES submission, or Regeneron Science Talent Search scholar'
+            : isTop10
+            ? 'Computational astrophysics simulation paper or journal problem solution publication'
+            : 'Independent math inquiry or proof notebook presentation'
+          : isTop5
+          ? 'First-author or primary contributor on preprint (arXiv/IEEE) or ISEF Grand Award finalist in Systems Software'
           : isTop10
           ? 'Structured research paper under university faculty mentorship or regional ISEF award'
-          : isTop25
-          ? 'Structured research paper draft, school science fair 1st place, or university lab shadowing'
-          : 'Independent inquiry project, literature review, or advanced capstone presentation',
-        competitions: isTop5
-          ? 'AIME Qualifier (Score 7+), USACO Gold/Platinum, USABO Semifinalist, or National Debate Finalist'
+          : 'Independent inquiry project, open-source documentation, or advanced capstone presentation',
+        competitions: isPreMed
+          ? isTop5
+            ? 'USABO National Semifinalist (Top 10%), HOSA International Gold Medal, or Science Olympiad State Gold'
+            : isTop10
+            ? 'USABO Top 20% nationwide score, State HOSA Medical Innovation winner, or Brain Bee finalist'
+            : 'Regional HOSA or local science competition participant'
+          : isEcon
+          ? isTop5
+            ? 'National Economics Challenge Adam Smith National Finals, Wharton Global High School Investment Top 10, or AMC 10/12 AIME qualifier'
+            : isTop10
+            ? 'NEC State Finals Champion, Wharton Investment semi-finalist, or regional business case competition gold'
+            : 'Local investment club challenge participant or novice debate competitor'
+          : isEngineering
+          ? isTop5
+            ? 'FIRST Robotics Dean’s List Finalist, British Physics Olympiad Senior Gold, or NASA Student Launch finalist'
+            : isTop10
+            ? 'BPhO Senior Physics Challenge Silver, FRC Regional Subsystem Lead, or State Science Olympiad medalist'
+            : 'Regional robotics or TSA TEAMS engineering competitor'
+          : isLaw
+          ? isTop5
+            ? 'NSDA National Speech & Debate Tournament Qualifier, Model UN Best Delegate Gavels, or John Locke Essay Commendation'
+            : isTop10
+            ? 'State Speech & Debate Tournament Finalist or collegiate Model UN outstanding delegate'
+            : 'Regional debate participant or local Model UN delegation member'
+          : isPhysicsMath
+          ? isTop5
+            ? 'USAMO / USAJMO Qualifier, AIME score 8+, or USAPhO Semifinalist Medalist'
+            : isTop10
+            ? 'AIME Qualifier via AMC 10/12, USAPhO F=ma top 10% nationwide, or HMMT top 10%'
+            : 'AMC 10 score 85+ or PhysicsBowl participant'
+          : isTop5
+          ? 'AIME Qualifier (Score 7+), USACO Gold/Platinum, or international hackathon championship'
           : isTop10
-          ? 'AIME Qualifier, USACO Gold, State Science Olympiad Gold, or Wharton Investment Finalist'
-          : isTop25
-          ? 'USACO Silver, State Science Olympiad Medalist, or National Merit Semifinalist'
-          : 'Regional STEM competition participant, AMC 10 score 85+, or hackathon finalist',
-        internships: isTop5
-          ? 'Selective merit summer institute (RSI, MIT Beaver Works, SSP, SIMR, LaunchX) or faculty apprentice'
+          ? 'AIME Qualifier, USACO Gold, or State Science Olympiad Gold'
+          : 'USACO Silver or regional STEM competition finalist',
+        internships: isPreMed
+          ? isTop5
+            ? 'Selective medical research institute (Stanford SIMR, Garcia Center, NIH Summer Internship) or hospital clinical trial shadowing'
+            : isTop10
+            ? 'University hospital faculty lab apprenticeship or biomedical laboratory research assistant'
+            : 'Local hospital volunteering (60+ hours logged) or clinical practice shadowing'
+          : isEcon
+          ? isTop5
+            ? 'Wharton Leadership in the Business World (LBW), Bank of America Student Leader, or boutique investment advisory fellow'
+            : isTop10
+            ? 'Economic consultancy, wealth management summer apprenticeship, or credit union financial fellow'
+            : 'Local credit union, community non-profit, or business operations volunteer'
+          : isEngineering
+          ? isTop5
+            ? 'MIT Beaver Works Summer Institute, SSP Engineering, or university robotics lab fellow'
+            : isTop10
+            ? 'University mechanical engineering lab apprenticeship or hardware startup prototyping fellow'
+            : 'Local engineering firm shadowing or maker space apprentice'
+          : isLaw
+          ? isTop5
+            ? 'United States Senate Page Program, Telluride Association (TASP), or Congressional district casework fellow'
+            : isTop10
+            ? 'State representative office fellowship, public defender clinic assistant, or municipal legal aid volunteer'
+            : 'Civic non-profit intern or local court observer'
+          : isPhysicsMath
+          ? isTop5
+            ? 'Research Science Institute (RSI), PROMYS, Ross Mathematics Program, or university physics department fellow'
+            : isTop10
+            ? 'Canada/USA Mathcamp, Boston University PROMYS Europe, or astrophysics observatory research assistant'
+            : 'University math circle assistant or computational physics apprentice'
+          : isTop5
+          ? 'Selective merit summer institute (RSI, MIT Beaver Works, SSP, LaunchX) or tech startup software engineer'
           : isTop10
           ? 'University faculty research apprenticeship or technical startup engineering internship'
-          : isTop25
-          ? 'Structured university lab internship or tech/business apprenticeship'
-          : 'Local tech apprenticeship, hospital shadowing, or community STEM tutoring',
-        certifications: isTop5
-          ? 'CS50x, DeepLearning.AI Specialization, MITx 6.002x, advanced multivariable calculus / linear algebra'
-          : isTop25
-          ? 'CS50x, Python for Data Science, or Coursera university certificate'
-          : 'Relevant technical MOOCs or foundational programming certifications',
+          : 'Structured university lab internship or tech/business apprenticeship',
+        certifications: isPreMed
+          ? isTop5
+            ? 'Johns Hopkins Genomic Technologies, NIH Bioethics, HIPAA compliance, and CPR/BLS certification'
+            : 'Cancer Biology online specialization, Coursera molecular genetics, or basic life support'
+          : isEcon
+          ? isTop5
+            ? 'Wharton Business Foundations, Columbia Financial Engineering, Python for Quant Finance (pandas/yfinance)'
+            : 'Microeconomics MOOC certificate or Excel financial modeling credential'
+          : isEngineering
+          ? isTop5
+            ? 'Certified SolidWorks Professional (CSWP), Autodesk Fusion 360 Digital Fabrication, ARM embedded systems'
+            : 'Certified SolidWorks Associate (CSWA) or introductory CAD credentials'
+          : isLaw
+          ? isTop5
+            ? 'Harvard Justice (Michael Sandel), Yale Constitutional Law, International Humanitarian Law, or NSDA Premier Distinction'
+            : 'Constitutional law MOOC or parliamentary debate distinction'
+          : isPhysicsMath
+          ? isTop5
+            ? 'MITx Multivariable Calculus & Differential Equations, proof techniques, LaTeX publication mastery'
+            : 'Calculus and linear algebra online credentials'
+          : isTop5
+          ? 'CS50x, DeepLearning.AI Specialization, MITx algorithms & data structures'
+          : 'CS50x, Python for Data Science, or Coursera university certificate',
         leadership: isTop5
-          ? 'Founder of community initiative or 501(c)(3) with verified 1,000+ participant reach'
+          ? `Founder of scaled community initiative or 501(c)(3) in ${target.targetField} with verified 1,000+ participant reach`
           : isTop10
-          ? 'President of major school STEM/Policy organization with regional event organization'
+          ? `President of major school or district organization in ${target.targetField} with regional event organization`
           : isTop25
           ? 'Officer in 2+ school organizations or varsity athletics lead'
           : 'Active school club officer or team captain',
       },
       executiveConclusion: isTop5
-        ? 'Top 5 admission requires an unmistakable "Angular Spike": perfect grades and test scores are merely the baseline ticket. Differentiators are verifiable external validation (Olympiad national selection, primary-author research, or scaled real-world artifact deployment).'
+        ? `Top 5 admission in ${target.targetField} requires an unmistakable "Angular Spike": perfect grades and test scores are merely the baseline ticket. Differentiators are verifiable external validation (national Olympiad selection, primary-author research preprint, or scaled community deployment).`
         : isTop10
-        ? 'Top 10 institutions seek proven scholastic endurance and high-percentile technical capability. Students must demonstrate tangible independent inquiry outside the standard high school curriculum.'
+        ? `Top 10 institutions seek proven scholastic endurance and high-percentile capability in ${target.targetField}. Students must demonstrate tangible independent inquiry outside the standard high school curriculum.`
         : isTop25
-        ? 'Top 25 universities look for strong academic consistency, deep involvement in 2–3 meaningful activities, and clear evidence of intellectual vitality and institutional contribution.'
+        ? `Top 25 universities look for strong academic consistency, deep involvement in 2–3 meaningful activities in ${target.targetField}, and clear evidence of intellectual vitality and institutional contribution.`
         : 'Focus on maintaining strong GPA trajectory, completing advanced coursework, and anchoring the profile with 1–2 structured projects or regional achievements.',
     };
-  }, [target.targetRankTier]);
+  }, [target.targetRankTier, target.targetField]);
 
   // Benchmark student representing the required target curve on the radar
   const benchmarkStudent: StudentProfile = {
@@ -341,8 +451,40 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
           </div>
         </div>
 
-        {/* SECONDARY SELECTORS: Country Filter & Optional Specific Institution Tag */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
+        {/* SECONDARY SELECTORS: Major Focus, Country Filter & Optional Specific Institution Tag */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-stone-100">
+          {/* Intended Major / Academic Discipline */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-stone-700 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5 text-stone-500" />
+                <span>Intended Major / Course</span>
+              </span>
+            </label>
+            <select
+              value={target.targetField}
+              onChange={(e) => {
+                setTarget((prev) => ({
+                  ...prev,
+                  targetField: e.target.value,
+                }));
+              }}
+              className="w-full text-xs px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-lg focus:ring-1 focus:ring-stone-900 font-medium text-stone-800"
+            >
+              <option value="Computer Science & AI">Computer Science & Artificial Intelligence</option>
+              <option value="Pre-Med & BioSciences">Pre-Med, Biomedical Sciences & Healthcare</option>
+              <option value="Mechanical & Aerospace Engineering">Mechanical & Aerospace Engineering</option>
+              <option value="Economics & Quant Finance">Economics, Quantitative Finance & Business</option>
+              <option value="Electrical Engineering & Robotics">Electrical Engineering & Robotics</option>
+              <option value="Physics & Pure Mathematics">Physics, Astronomy & Pure Mathematics</option>
+              <option value="Law, Policy & International Relations">Law, Public Policy & International Relations</option>
+              <option value="Psychology & Cognitive Science">Psychology, Neuroscience & Cognitive Science</option>
+              <option value="Chemistry & Materials Science">Chemistry, Biochemistry & Materials Science</option>
+              <option value="Architecture & Urban Planning">Architecture & Spatial Design</option>
+              <option value="Business Administration & Management">Business Administration & Management</option>
+            </select>
+          </div>
+
           {/* Target Country Filter */}
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-stone-700 flex items-center gap-1.5">
@@ -374,7 +516,7 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-stone-700 flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-stone-500" />
-              <span>Specific Institution Focus (Optional within {target.targetRankTier})</span>
+              <span>Specific Institution (Optional within {target.targetRankTier})</span>
             </label>
             <select
               value={target.targetUniversity || ''}
@@ -636,6 +778,7 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
         studentName={target.studentName}
         targetRankTier={target.targetRankTier}
         targetUniversity={target.targetUniversity}
+        targetField={target.targetField}
         baselineReadiness={pathData.readinessScore}
         projectedReadiness={pathData.projectedReadinessScore}
       />
@@ -654,6 +797,7 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
         targetRankTier={target.targetRankTier}
         targetUniversity={target.targetUniversity}
         targetCountry={target.targetCountry}
+        targetField={target.targetField}
       />
     </div>
   );

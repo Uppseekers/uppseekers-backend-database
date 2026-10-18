@@ -27,6 +27,7 @@ interface TrajectoryTwoLineChartProps {
   studentName: string;
   targetRankTier: RankTier;
   targetUniversity?: string;
+  targetField?: string;
   baselineReadiness: number;
   projectedReadiness: number;
 }
@@ -36,6 +37,7 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
   studentName,
   targetRankTier,
   targetUniversity,
+  targetField = 'Computer Science & AI',
   baselineReadiness,
   projectedReadiness,
 }) => {
@@ -63,70 +65,382 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
       ? 0.9
       : 0.85;
 
-  const rawMilestones: {
-    semester: string;
-    grade: GradeLevel;
-    avg: number;
-    benchmark: string;
-    action: string;
-  }[] = [
-    {
-      semester: 'G9 Fall',
-      grade: 'Grade 9',
-      avg: 42,
-      benchmark: 'Highest honors course load; joined STEM / math enrichment circle',
-      action: 'Lock in unweighted 4.0 GPA; join high school competitive team',
-    },
-    {
-      semester: 'G9 Spring',
-      grade: 'Grade 9',
-      avg: 48,
-      benchmark: 'First local science fair / AMC 10 participation; self-taught coding',
-      action: 'Complete independent inquiry; explore CS50x or specialized MOOCs',
-    },
-    {
-      semester: 'G10 Fall',
-      grade: 'Grade 10',
-      avg: 58,
-      benchmark: 'Regional competition honors; club executive role; AMC 10 score 95+',
-      action: 'Target AIME cutoff; build first public open-source project or app',
-    },
-    {
-      semester: 'G10 Spring',
-      grade: 'Grade 10',
-      avg: 68,
-      benchmark: 'Cold lab outreach; secured summer research apprenticeship or top camp',
-      action: 'Contact 15+ university professors with tailored research proposals',
-    },
-    {
-      semester: 'G11 Fall',
-      grade: 'Grade 11',
-      avg: 78,
-      benchmark: 'AIME qualifier (Score 6+); first-author preprint draft on arXiv',
-      action: 'Focus on primary preprint submission and national contest rounds',
-    },
-    {
-      semester: 'G11 Spring',
-      grade: 'Grade 11',
-      avg: 86,
-      benchmark: 'ISEF finalist / USAMO qualifier; selective summer institute admit',
-      action: 'Apply to RSI, Beaver Works, or SIMR; prepare standardized testing',
-    },
-    {
-      semester: 'G12 Fall',
-      grade: 'Grade 12',
-      avg: 94,
-      benchmark: 'SlideRoom Maker Portfolio; technical recommendations secured',
-      action: 'Submit Early Action / Early Decision with polished technical dossier',
-    },
-    {
-      semester: 'G12 Spring',
-      grade: 'Grade 12',
-      avg: 98,
-      benchmark: 'Senior capstone deployed; mentorship transition; Top tier admission',
-      action: 'Maintain academic momentum; prepare scholarship and honors submissions',
-    },
-  ];
+  // Generate field-specific trajectory milestones
+  const getFieldSpecificMilestones = (field: string) => {
+    const f = field.toLowerCase();
+    const isPreMed = f.includes('pre-med') || f.includes('bio') || f.includes('health') || f.includes('med');
+    const isEngineering = f.includes('engineering') || f.includes('robotics') || f.includes('mechanical') || f.includes('aerospace');
+    const isEcon = f.includes('econ') || f.includes('quant') || f.includes('finance') || f.includes('business');
+    const isLaw = f.includes('law') || f.includes('policy') || f.includes('international') || f.includes('gov');
+    const isPhysicsMath = f.includes('physics') || f.includes('math') || f.includes('astronomy');
+
+    if (isPreMed) {
+      return [
+        {
+          semester: 'G9 Fall',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 42,
+          benchmark: 'Highest honors biology/chemistry course load; joined HOSA / pre-med enrichment club',
+          action: 'Lock in unweighted 4.0 GPA; join high school Science Olympiad or biology team',
+        },
+        {
+          semester: 'G9 Spring',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 48,
+          benchmark: 'Local science fair inquiry; completed bio-safety course & 30+ hrs clinical volunteering',
+          action: 'Formulate independent biological hypothesis; volunteer at community medical clinic',
+        },
+        {
+          semester: 'G10 Fall',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 58,
+          benchmark: 'Regional science fair honors; USA Biology Olympiad (USABO) Semifinalist prep',
+          action: 'Target Campbell Biology mastery; secure laboratory safety / data assay certification',
+        },
+        {
+          semester: 'G10 Spring',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 68,
+          benchmark: 'University wet-lab outreach; secured summer biomedical research apprenticeship',
+          action: 'Contact 15+ university biomedical researchers with tailored research proposals',
+        },
+        {
+          semester: 'G11 Fall',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 78,
+          benchmark: 'USABO Semifinalist (Top 10%); first-author preprint draft on bioRxiv',
+          action: 'Focus on primary manuscript submission in molecular biology, oncology, or genetics',
+        },
+        {
+          semester: 'G11 Spring',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 86,
+          benchmark: 'ISEF finalist in Biomedical Sciences; selective summer institute admit (SIMR/RSI)',
+          action: 'Submit ISEF qualifying project; complete standardized testing (SAT/ACT 1550+)',
+        },
+        {
+          semester: 'G12 Fall',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 94,
+          benchmark: 'SlideRoom Research Portfolio; Principal Investigator letter of recommendation secured',
+          action: 'Submit Early Action / Early Decision with polished clinical and research dossier',
+        },
+        {
+          semester: 'G12 Spring',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 98,
+          benchmark: 'Senior clinical capstone presentation; national medical symposium honors; Top tier admission',
+          action: 'Maintain academic momentum; prepare scholarship and honors submissions',
+        },
+      ];
+    }
+
+    if (isEngineering) {
+      return [
+        {
+          semester: 'G9 Fall',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 42,
+          benchmark: 'Highest honors physics/calculus course load; joined FRC / FTC Robotics team',
+          action: 'Lock in unweighted 4.0 GPA; master CAD fundamentals in SolidWorks or Onshape',
+        },
+        {
+          semester: 'G9 Spring',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 48,
+          benchmark: 'First physical mechanism deployed; Arduino/Raspberry Pi micro-controller projects',
+          action: 'Build autonomous mechanism prototype; compete in rookie robotics tournament',
+        },
+        {
+          semester: 'G10 Fall',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 58,
+          benchmark: 'FRC lead subsystem designer; Science Olympiad medal; advanced 3D fabrication',
+          action: 'Achieve Certified SolidWorks Associate (CSWA); lead mechanical build cycle',
+        },
+        {
+          semester: 'G10 Spring',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 68,
+          benchmark: 'University engineering lab outreach; secured summer robotics or materials apprenticeship',
+          action: 'Contact university robotics and aerospace labs with tailored prototyping portfolio',
+        },
+        {
+          semester: 'G11 Fall',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 78,
+          benchmark: 'First-author engineering preprint or patent pending; FRC regional division finalist',
+          action: 'Deploy novel hardware artifact; submit paper to IEEE or young researcher symposium',
+        },
+        {
+          semester: 'G11 Spring',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 86,
+          benchmark: 'MIT THINK finalist or Beaver Works / RSI admit; national robotics qualification',
+          action: 'Apply to competitive engineering institutes; lock in standardized testing',
+        },
+        {
+          semester: 'G12 Fall',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 94,
+          benchmark: 'SlideRoom Maker Portfolio with CAD schematics and video demonstrations',
+          action: 'Submit Early Action / Early Decision with faculty/mentor recommendation',
+        },
+        {
+          semester: 'G12 Spring',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 98,
+          benchmark: 'Senior engineering capstone deployed; national design honors; Top tier admission',
+          action: 'Maintain academic momentum; prepare scholarship and honors submissions',
+        },
+      ];
+    }
+
+    if (isEcon) {
+      return [
+        {
+          semester: 'G9 Fall',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 42,
+          benchmark: 'Highest honors mathematics course load; joined speech & debate or economics club',
+          action: 'Lock in unweighted 4.0 GPA; study AP Micro/Macroeconomics principles',
+        },
+        {
+          semester: 'G9 Spring',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 48,
+          benchmark: 'National Economics Challenge (David Ricardo division); econometric modeling in Python',
+          action: 'Complete introductory econometrics or data analysis; compete in stock pitch competition',
+        },
+        {
+          semester: 'G10 Fall',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 58,
+          benchmark: 'Wharton Global Youth Investment Challenge state finalist; AMC 10 score 95+',
+          action: 'Target AIME qualification for quantitative spike; lead school investment society',
+        },
+        {
+          semester: 'G10 Spring',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 68,
+          benchmark: 'FinTech / economic policy firm outreach; secured summer financial research fellowship',
+          action: 'Contact university economics faculty; build automated macroeconomic scraper',
+        },
+        {
+          semester: 'G11 Fall',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 78,
+          benchmark: 'Published econometric paper in student economics journal; NEC Adam Smith Semifinalist',
+          action: 'Complete primary-author empirical economic inquiry on market efficiency or inflation',
+        },
+        {
+          semester: 'G11 Spring',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 86,
+          benchmark: 'Fed Challenge finalist; Bank of America Student Leader or Wharton LBW admit',
+          action: 'Present findings at youth economics symposium; lock in SAT/ACT 1550+',
+        },
+        {
+          semester: 'G12 Fall',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 94,
+          benchmark: 'Economic Policy Brief & Quantitative Portfolio; faculty recommendation secured',
+          action: 'Submit Early Action / Early Decision with polished analytical dossier',
+        },
+        {
+          semester: 'G12 Spring',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 98,
+          benchmark: 'Senior investment fund capstone deployed; national business honors; Top tier admission',
+          action: 'Maintain academic momentum; prepare scholarship and honors submissions',
+        },
+      ];
+    }
+
+    if (isLaw) {
+      return [
+        {
+          semester: 'G9 Fall',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 42,
+          benchmark: 'Highest honors English & history course load; joined Model UN and Speech & Debate',
+          action: 'Lock in unweighted 4.0 GPA; master parliamentary procedure and research briefs',
+        },
+        {
+          semester: 'G9 Spring',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 48,
+          benchmark: 'Novice Best Delegate gavel; published local youth op-ed on civic municipal policy',
+          action: 'Compete in regional speech and debate circuit; engage in district community advocacy',
+        },
+        {
+          semester: 'G10 Fall',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 58,
+          benchmark: 'Varsity Lincoln-Douglas state qualifier; organized district youth voting rights forum',
+          action: 'Draft regional public policy whitepaper; lead high school Model UN delegation',
+        },
+        {
+          semester: 'G10 Spring',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 68,
+          benchmark: 'Congressional district office or legal aid clinic internship; legislative research',
+          action: 'Secure summer policy fellowship with state representative or non-profit legal advocacy',
+        },
+        {
+          semester: 'G11 Fall',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 78,
+          benchmark: 'National Speech & Debate Tournament qualifier; published policy brief in law journal',
+          action: 'Submit legal commentary manuscript; organize statewide civic coalition',
+        },
+        {
+          semester: 'G11 Spring',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 86,
+          benchmark: 'Senate Page or TASP / Telluride Association summer admit; national MUN gavels',
+          action: 'Complete standardized testing (SAT/ACT 1550+ with 99th percentile reading/writing)',
+        },
+        {
+          semester: 'G12 Fall',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 94,
+          benchmark: 'SlideRoom Writing & Policy Portfolio; congressional/mentor recommendation secured',
+          action: 'Submit Early Action / Early Decision with polished constitutional or policy dossier',
+        },
+        {
+          semester: 'G12 Spring',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 98,
+          benchmark: 'Policy brief adopted by municipal council; National Merit; Top tier admission',
+          action: 'Maintain academic momentum; prepare scholarship and honors submissions',
+        },
+      ];
+    }
+
+    if (isPhysicsMath) {
+      return [
+        {
+          semester: 'G9 Fall',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 42,
+          benchmark: 'Accelerated proof-based mathematics; joined regional Math Circle / olympiad training',
+          action: 'Lock in unweighted 4.0 GPA; begin preparation for AMC 10 and USAMTS',
+        },
+        {
+          semester: 'G9 Spring',
+          grade: 'Grade 9' as GradeLevel,
+          avg: 48,
+          benchmark: 'AMC 10 score 100+; USAMTS participant; introductory computational astrophysics',
+          action: 'Complete linear algebra / multivariable calculus; write numerical physics simulation',
+        },
+        {
+          semester: 'G10 Fall',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 58,
+          benchmark: 'AIME qualifier (Score 7+); USAPhO F=ma contest top 10% nationwide score',
+          action: 'Intensive contest rounds; submit solution to mathematical problem journal',
+        },
+        {
+          semester: 'G10 Spring',
+          grade: 'Grade 10' as GradeLevel,
+          avg: 68,
+          benchmark: 'Theoretical physics / pure math department outreach; secured summer research mentorship',
+          action: 'Contact university mathematicians with specific inquiries on abstract algebra or topology',
+        },
+        {
+          semester: 'G11 Fall',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 78,
+          benchmark: 'USAMO or USAPhO Semifinalist; first-author preprint draft on arXiv (math/physics)',
+          action: 'Finalize proof or simulation paper; submit to Intel/Regeneron STS or MIT PRIMES',
+        },
+        {
+          semester: 'G11 Spring',
+          grade: 'Grade 11' as GradeLevel,
+          avg: 86,
+          benchmark: 'PROMYS / Ross Mathematics / RSI admit; national olympiad medal',
+          action: 'Attend elite summer mathematics institute; lock in standardized testing',
+        },
+        {
+          semester: 'G12 Fall',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 94,
+          benchmark: 'SlideRoom Pure Mathematics Portfolio; university faculty recommendation secured',
+          action: 'Submit Early Action / Early Decision with rigorous mathematical/physics dossier',
+        },
+        {
+          semester: 'G12 Spring',
+          grade: 'Grade 12' as GradeLevel,
+          avg: 98,
+          benchmark: 'Senior theoretical capstone deployed; national mathematics honors; Top tier admission',
+          action: 'Maintain academic momentum; prepare scholarship and honors submissions',
+        },
+      ];
+    }
+
+    // Default to Computer Science & AI / General Tech
+    return [
+      {
+        semester: 'G9 Fall',
+        grade: 'Grade 9' as GradeLevel,
+        avg: 42,
+        benchmark: 'Highest honors course load; joined STEM / math enrichment circle',
+        action: 'Lock in unweighted 4.0 GPA; join high school competitive team',
+      },
+      {
+        semester: 'G9 Spring',
+        grade: 'Grade 9' as GradeLevel,
+        avg: 48,
+        benchmark: 'First local science fair / AMC 10 participation; self-taught coding',
+        action: 'Complete independent inquiry; explore CS50x or specialized MOOCs',
+      },
+      {
+        semester: 'G10 Fall',
+        grade: 'Grade 10' as GradeLevel,
+        avg: 58,
+        benchmark: 'Regional competition honors; club executive role; AMC 10 score 95+',
+        action: 'Target AIME cutoff; build first public open-source project or app',
+      },
+      {
+        semester: 'G10 Spring',
+        grade: 'Grade 10' as GradeLevel,
+        avg: 68,
+        benchmark: 'Cold lab outreach; secured summer research apprenticeship or top camp',
+        action: 'Contact 15+ university professors with tailored research proposals',
+      },
+      {
+        semester: 'G11 Fall',
+        grade: 'Grade 11' as GradeLevel,
+        avg: 78,
+        benchmark: 'AIME qualifier (Score 6+); first-author preprint draft on arXiv',
+        action: 'Focus on primary preprint submission and national contest rounds',
+      },
+      {
+        semester: 'G11 Spring',
+        grade: 'Grade 11' as GradeLevel,
+        avg: 86,
+        benchmark: 'ISEF finalist / USAMO qualifier; selective summer institute admit',
+        action: 'Apply to RSI, Beaver Works, or SIMR; prepare standardized testing',
+      },
+      {
+        semester: 'G12 Fall',
+        grade: 'Grade 12' as GradeLevel,
+        avg: 94,
+        benchmark: 'SlideRoom Maker Portfolio; technical recommendations secured',
+        action: 'Submit Early Action / Early Decision with polished technical dossier',
+      },
+      {
+        semester: 'G12 Spring',
+        grade: 'Grade 12' as GradeLevel,
+        avg: 98,
+        benchmark: 'Senior capstone deployed; mentorship transition; Top tier admission',
+        action: 'Maintain academic momentum; prepare scholarship and honors submissions',
+      },
+    ];
+  };
+
+  const rawMilestones = getFieldSpecificMilestones(targetField);
 
   // Synthesize points with student's current baseline & projected curve
   const points: TrajectoryPoint[] = rawMilestones.map((m, idx) => {
@@ -233,13 +547,15 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
           <div className="flex items-center gap-2 text-xs font-mono text-stone-500 uppercase tracking-wider mb-1">
             <span>Trajectory Pathfinder</span>
             <span>·</span>
+            <span className="text-stone-800 font-semibold">{targetField}</span>
+            <span>·</span>
             <span>Grade 9 Fall → Grade 12 Spring Benchmark</span>
           </div>
           <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 tracking-tight">
             Admissions Readiness 2-Line Trajectory Chart
           </h3>
           <p className="text-xs sm:text-sm text-stone-600 mt-1">
-            Empirical journey of {targetRankTier} admitted candidates vs. <strong className="text-stone-900">{studentName}</strong>'s current standing and tentative back-engineered path. Hover or click any milestone point below to inspect benchmark criteria.
+            Empirical journey of {targetRankTier} ({targetField}) admitted candidates vs. <strong className="text-stone-900">{studentName}</strong>'s current standing and tentative back-engineered path. Hover or click any milestone point below to inspect benchmark criteria.
           </p>
         </div>
 

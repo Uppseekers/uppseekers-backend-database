@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Upload,
   FileSpreadsheet,
@@ -10,6 +10,7 @@ import {
   Sparkles,
   Sliders,
   ChevronDown,
+  BookOpen,
 } from 'lucide-react';
 import { AspiringStudentBaseline, AspiringStudentTarget, GradeLevel } from '../../types';
 import { SAMPLE_ASPIRING_PROFILES } from '../../utils/roadmapEngine';
@@ -34,10 +35,11 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
   const [isEditingModalOpen, setIsEditingModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Edit form state
+  // Edit form state including Intended Course or Major
   const [editForm, setEditForm] = useState<{
     name: string;
     grade: GradeLevel;
+    targetField: string;
     gpa: string;
     tests: string;
     internships: string;
@@ -48,6 +50,7 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
   }>({
     name: target.studentName,
     grade: target.currentGrade,
+    targetField: target.targetField || 'Computer Science & AI',
     gpa: baseline.gpaRigor,
     tests: baseline.testingStatus,
     internships: baseline.internshipsWork,
@@ -56,6 +59,22 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
     projects: baseline.technicalProjects,
     leadership: baseline.leadershipActivities,
   });
+
+  // Keep form in sync when target or baseline changes
+  useEffect(() => {
+    setEditForm({
+      name: target.studentName,
+      grade: target.currentGrade,
+      targetField: target.targetField || 'Computer Science & AI',
+      gpa: baseline.gpaRigor,
+      tests: baseline.testingStatus,
+      internships: baseline.internshipsWork,
+      research: baseline.researchExperience,
+      competitions: baseline.competitionsHonors,
+      projects: baseline.technicalProjects,
+      leadership: baseline.leadershipActivities,
+    });
+  }, [target, baseline, isEditingModalOpen]);
 
   // Handle Drag & Drop
   const handleDragOver = (e: React.DragEvent) => {
@@ -121,18 +140,20 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
         else if (gradeRaw.includes('11')) grade = 'Grade 11';
         else if (gradeRaw.includes('12')) grade = 'Grade 12';
 
+        const major = getCol(['major', 'course', 'field', 'intended', 'discipline', 'subject', 'program']) || target.targetField;
         const gpa = getCol(['gpa', 'academic', 'marks']) || baseline.gpaRigor;
         const tests = getCol(['sat', 'act', 'test', 'score']) || baseline.testingStatus;
         const internships = getCol(['intern', 'work', 'job']) || baseline.internshipsWork;
         const research = getCol(['research', 'paper', 'lab']) || baseline.researchExperience;
         const competitions = getCol(['competition', 'award', 'olympiad', 'honor']) || baseline.competitionsHonors;
-        const projects = getCol(['project', 'github', 'app', 'code']) || baseline.technicalProjects;
+        const projects = getCol(['project', 'github', 'app', 'code', 'hardware', 'artifact']) || baseline.technicalProjects;
         const leadership = getCol(['lead', 'activity', 'club', 'sport', 'extracurricular']) || baseline.leadershipActivities;
 
         onUpdateTarget({
           ...target,
           studentName: name,
           currentGrade: grade,
+          targetField: major || target.targetField,
         });
 
         onUpdateBaseline({
@@ -145,7 +166,7 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
           leadershipActivities: leadership,
         });
 
-        setUploadSuccess(`Successfully uploaded & parsed profile for "${name}" (${grade}) from ${file.name}!`);
+        setUploadSuccess(`Successfully uploaded & parsed profile for "${name}" (${grade} · ${major || target.targetField}) from ${file.name}!`);
       } catch (err: any) {
         setUploadError(err.message || 'Failed to parse file. Please verify CSV/Excel format.');
       }
@@ -155,13 +176,12 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
   };
 
   const applyParsedData = (data: any) => {
-    if (data.name) {
-      onUpdateTarget({
-        ...target,
-        studentName: data.name,
-        currentGrade: data.grade || target.currentGrade,
-      });
-    }
+    onUpdateTarget({
+      ...target,
+      studentName: data.name || target.studentName,
+      currentGrade: data.grade || target.currentGrade,
+      targetField: data.major || data.course || data.targetField || target.targetField,
+    });
     onUpdateBaseline({
       gpaRigor: data.gpa || data.academics || baseline.gpaRigor,
       testingStatus: data.tests || data.satAct || baseline.testingStatus,
@@ -173,11 +193,16 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
     });
   };
 
-  // Download Sample Template
+  // Download Sample Template with Intended Course or Major Column
   const handleDownloadTemplate = () => {
     const csvContent =
-      'Name,Current Grade,Academics & GPA,Standardized Tests,Internships & Work,Research Experience,Competitions & Awards,Projects & Technical,Leadership & Activities\n' +
-      '"Aarav Patel","Grade 10","GPA: 3.94 / 4.0 UW; Honors Chemistry, Honors Pre-Calc","PSAT 10: 1440 (Math 760); Target SAT: 1560+","Weekend coding tutor at community center","Explored convolutional neural nets online; no published paper yet","AMC 10 score: 98; USACO Bronze","Built React personal portfolio; Python discord bot","Treasurer of Robotics Club; JV Track"';
+      'Name,Current Grade,Intended Course or Major,Academics & GPA,Standardized Tests,Internships & Work,Research Experience,Competitions & Awards,Projects & Technical,Leadership & Activities\n' +
+      '"Aarav Patel","Grade 10","Pre-Med & BioSciences","GPA: 3.96 / 4.0 UW; Honors Chemistry, Honors Biology","PSAT 10: 1450 (Math 740, ERW 710); Target SAT: 1550+","Community hospital volunteer (60 hours logged)","Regional science fair inquiry on enzyme kinetics; no published paper yet","HOSA Regional Gold in Medical Math; USABO participant","Personal blog reviewing immunology preprints; CPR certified","Co-President of Red Cross Youth Club; Track & Field"\n' +
+      '"Elena Rossi","Grade 10","Economics & Quant Finance","GPA: 3.98 / 4.0 UW; AP Microeconomics (5), Honors Algebra 2","PSAT 10: 1470; Target SAT: 1570+","Youth intern at local credit union financial literacy office","Statistical paper on local retail grocery inflation trends","National Economics Challenge State Finalist; Wharton Global Youth Investment","Algorithmic portfolio backtester script in Python using yfinance","Varsity Debate (Public Forum); Investment Club Co-President"\n' +
+      '"Marcus Vance","Grade 11","Mechanical & Aerospace Engineering","GPA: 3.92 / 4.0 UW; AP Physics 1 (5), AP Calc BC","SAT: 1530 (Math 790, ERW 740)","Shadowed automation engineer at aerospace manufacturing plant","Extended essay testing carbon fiber tensile failure points","British Physics Olympiad Senior Challenge Silver; FRC Robotics driver","Designed and 3D-printed custom robotic gripper with Arduino","STEM Outreach Lead; Quiz Bowl Vice Captain"\n' +
+      '"Maya Chen","Grade 11","Law, Policy & International Relations","GPA: 3.97 / 4.0 UW; AP US History (5), AP Government (5)","SAT: 1540 (ERW 780, Math 760)","Intern for State Representative district office; citizen constituent casework","Independent analysis on constitutional privacy doctrines and digital surveillance","NSDA National Speech & Debate Qualifier; Model UN Best Delegate Gavel","Author of regional youth public policy newsletter with 1,200 subscribers","Youth City Council Advisory Board Chair; Mock Trial Captain"\n' +
+      '"Sophia Lin","Grade 10","Computer Science & AI","GPA: 3.94 / 4.0 UW; Honors Chemistry, Honors Pre-Calc","PSAT 10: 1440 (Math 760); Target SAT: 1560+","Weekend coding tutor at community center","Explored convolutional neural nets online; no published paper yet","AMC 10 score: 98; USACO Bronze","Built React personal portfolio; Python discord bot","Treasurer of Robotics Club; JV Track"\n' +
+      '"David Kim","Grade 10","Physics & Pure Mathematics","GPA: 4.0 / 4.0 UW; Multivariable Calculus, AP Physics C","SAT: 1560 (Math 800, ERW 760)","Research assistant on computational stellar astrophysics simulation","Inquiry into numerical approximations for three-body orbital mechanics","USAMO Qualifier; USAPhO F=ma Bronze; AMC 10 score: 126","Developed open-source Python physics engine for gravitational modeling","President of High School Math Circle; Quiz Bowl Captain"';
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -195,6 +220,7 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
       ...target,
       studentName: editForm.name,
       currentGrade: editForm.grade,
+      targetField: editForm.targetField || target.targetField,
     });
     onUpdateBaseline({
       gpaRigor: editForm.gpa,
@@ -206,7 +232,7 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
       leadershipActivities: editForm.leadership,
     });
     setIsEditingModalOpen(false);
-    setUploadSuccess('Profile updated successfully!');
+    setUploadSuccess(`Profile updated successfully for ${editForm.name} (${editForm.targetField})!`);
   };
 
   return (
@@ -231,7 +257,7 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
             type="button"
             onClick={handleDownloadTemplate}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-200 transition-all cursor-pointer"
-            title="Download blank Excel/CSV template"
+            title="Download multi-discipline Excel/CSV template with Intended Course or Major column"
           >
             <Download className="w-3.5 h-3.5 text-stone-500" />
             <span>Download CSV Template</span>
@@ -242,6 +268,7 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
               setEditForm({
                 name: target.studentName,
                 grade: target.currentGrade,
+                targetField: target.targetField || 'Computer Science & AI',
                 gpa: baseline.gpaRigor,
                 tests: baseline.testingStatus,
                 internships: baseline.internshipsWork,
@@ -353,13 +380,13 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
           <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-fadeIn max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-indigo-600" />
+                <Edit3 className="w-4 h-4 text-stone-900" />
                 Edit Aspiring Student Profile Online
               </h3>
               <button
                 type="button"
                 onClick={() => setIsEditingModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm cursor-pointer"
+                className="text-stone-400 hover:text-stone-600 text-sm cursor-pointer"
               >
                 ✕
               </button>
@@ -368,21 +395,21 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
             <form onSubmit={handleSaveEdit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Student Full Name</label>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Student Full Name</label>
                   <input
                     type="text"
                     required
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    className="w-full text-xs px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-stone-900 font-medium"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Current Grade Level</label>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Current Grade Level</label>
                   <select
                     value={editForm.grade}
                     onChange={(e) => setEditForm({ ...editForm, grade: e.target.value as GradeLevel })}
-                    className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                    className="w-full text-xs px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-stone-900 font-medium"
                   >
                     <option value="Grade 9">Grade 9 (Freshman)</option>
                     <option value="Grade 10">Grade 10 (Sophomore)</option>
@@ -392,14 +419,55 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
                 </div>
               </div>
 
+              {/* Intended Course or Major */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Academics & GPA Rigor</label>
+                <label className="block text-xs font-semibold text-stone-700 mb-1 flex items-center justify-between">
+                  <span>Intended Course or Major</span>
+                  <span className="text-[10px] font-mono text-stone-500">Governs roadmap & supercurricular tasks</span>
+                </label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[
+                    'Computer Science & AI',
+                    'Pre-Med & BioSciences',
+                    'Mechanical & Aerospace Engineering',
+                    'Economics & Quant Finance',
+                    'Physics & Pure Mathematics',
+                    'Law, Policy & International Relations',
+                    'Electrical & Hardware Systems',
+                    'Business & Management',
+                  ].map((field) => (
+                    <button
+                      key={field}
+                      type="button"
+                      onClick={() => setEditForm({ ...editForm, targetField: field })}
+                      className={`text-[11px] px-2.5 py-1 rounded-md border transition-all cursor-pointer ${
+                        editForm.targetField === field
+                          ? 'bg-stone-900 text-stone-100 border-stone-900 font-semibold shadow-2xs'
+                          : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                      }`}
+                    >
+                      {field}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={editForm.targetField}
+                  onChange={(e) => setEditForm({ ...editForm, targetField: e.target.value })}
+                  placeholder="e.g. Biomedical Engineering, Pure Mathematics, Cognitive Science..."
+                  className="w-full text-xs px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-stone-900 font-medium text-stone-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Academics & GPA Rigor</label>
                 <input
                   type="text"
                   value={editForm.gpa}
                   onChange={(e) => setEditForm({ ...editForm, gpa: e.target.value })}
                   placeholder="e.g. GPA: 3.94 / 4.0 UW; 4 APs taken"
-                  className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-xs px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-stone-900"
                 />
               </div>
 
