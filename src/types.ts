@@ -112,6 +112,8 @@ export interface BackEngineeredPath {
     communication: number;
     creativity: number;
     compositeScore: number;
+    totalPoints?: number;
+    countryPhilosophy?: string;
   };
   aspirantScores: {
     problemSolving: number;
@@ -121,6 +123,8 @@ export interface BackEngineeredPath {
     communication: number;
     creativity: number;
     compositeScore: number;
+    totalPoints?: number;
+    completedMilestoneCount?: number;
   };
   projectedScores: {
     problemSolving: number;
@@ -139,6 +143,16 @@ export interface BackEngineeredPath {
     area: string;
     gapDescription: string;
     recommendedRemedy: string;
+  }[];
+  detectedActivities?: {
+    milestoneId: string;
+    isCompleted: boolean;
+    category: string;
+    title: string;
+    evidenceSnippet: string;
+    dimension: 'problemSolving' | 'technicalSkills' | 'criticalThinking' | 'teamWork' | 'communication' | 'creativity';
+    pointsBoost: number;
+    reason: string;
   }[];
 }
 

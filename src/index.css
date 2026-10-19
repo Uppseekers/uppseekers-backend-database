@@ -1,1 +1,138 @@
 @import "tailwindcss";
+
+@media print {
+  /* 1. Page & root sizing */
+  @page {
+    size: A4 portrait;
+    margin: 10mm 10mm 10mm 10mm;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #1c1917 !important;
+    font-size: 10.5pt !important;
+    line-height: 1.4 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* 2. Hide screen-only navigation, toolbars, buttons, controls, and floating docks */
+  header,
+  nav,
+  footer,
+  aside,
+  button,
+  select,
+  input,
+  textarea,
+  .print\:hidden,
+  [data-print-hidden="true"],
+  [role="tooltip"],
+  .tooltip,
+  .comparison-dock,
+  div[class*="fixed bottom"],
+  div[class*="sticky top"] {
+    display: none !important;
+  }
+
+  /* 3. Unconstrain containers and prevent scroll clipping */
+  main,
+  div,
+  section,
+  article,
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-hidden {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* 4. Card & Block Integrity (Prevent orphaned text blocks and broken page cuts) */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  p, li {
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  .bg-white,
+  .rounded-2xl,
+  .rounded-xl,
+  .border,
+  table,
+  tr,
+  figure,
+  svg,
+  .space-y-6 > div,
+  .space-y-8 > div {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* 5. Clean, crisp borders without screen drop shadows */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .border-stone-200,
+  .border-stone-200\/90,
+  .border-slate-200,
+  .border {
+    border-color: #d6d3d1 !important;
+  }
+
+  /* 6. Ensure Charts (SVGs & Canvases) scale cleanly without clipping */
+  svg,
+  canvas {
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  /* 7. Drawer handling during print: expand full-page, remove overlay backdrop */
+  .fixed.inset-0 {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    display: block !important;
+  }
+
+  .fixed.inset-0 > div {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* 8. Text readability */
+  .text-stone-500,
+  .text-stone-600 {
+    color: #44403c !important;
+  }
+
+  .text-stone-900,
+  .text-black {
+    color: #0c0a09 !important;
+  }
+}

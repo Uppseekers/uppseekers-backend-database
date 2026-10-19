@@ -11,10 +11,71 @@ import {
   Sliders,
   ChevronDown,
   BookOpen,
+  UserPlus,
+  RotateCcw,
+  Trash2,
 } from 'lucide-react';
 import { AspiringStudentBaseline, AspiringStudentTarget, GradeLevel } from '../../types';
 import { SAMPLE_ASPIRING_PROFILES } from '../../utils/roadmapEngine';
 import { parseCSV } from '../../utils/csvParser';
+
+const OPTIONAL_ACTIVITY_PRESETS = [
+  {
+    label: 'Pre-Med & BioSciences',
+    targetField: 'Pre-Med & BioSciences',
+    gpa: 'GPA: 3.96 UW / 4.5 W; AP Bio (5), AP Chem (5), AP Calc BC',
+    tests: 'SAT: 1540 (Math: 780, EBRW: 760)',
+    internships: 'Hospital volunteer (120 hrs); clinical shadowing in pediatric surgery and pathology',
+    research: 'Assisted in university genomics wet-lab analyzing CRISPR off-target cleavage assays',
+    competitions: 'USABO Semifinalist (Top 10%); HOSA Medical Innovation State Gold Medal',
+    projects: 'Interactive web guide mapping clinical trial access disparities in local counties',
+    leadership: 'Red Cross Youth Chapter President; organized high school CPR certified workshops',
+  },
+  {
+    label: 'CS & AI Systems',
+    targetField: 'Computer Science & AI',
+    gpa: 'GPA: 3.95 UW / 4.6 W; AP CSA (5), AP Calc BC (5), AP Physics C',
+    tests: 'SAT: 1570 (Math: 800, EBRW: 770)',
+    internships: 'Software engineering intern at health-tech startup; built distributed queue worker',
+    research: 'Co-author on preprint applying transformer attention mechanisms to code refactoring',
+    competitions: 'USACO Gold Division competitor; 1st Place at State High School Hackathon',
+    projects: 'Open-source distributed database engine (350+ GitHub stars, 2k downloads)',
+    leadership: 'President of High School Computer Science Club; tutor for 40+ middle schoolers in Python',
+  },
+  {
+    label: 'Economics & Quant',
+    targetField: 'Economics & Quant Finance',
+    gpa: 'GPA: 3.94 UW / 4.4 W; AP Micro (5), AP Macro (5), AP Stats (5), AP Calc BC',
+    tests: 'SAT: 1550 (Math: 800, EBRW: 750)',
+    internships: 'Summer economic research assistant for municipal tax policy advisory group',
+    research: 'Econometric analysis of algorithmic trading order-flow impact on market liquidity',
+    competitions: 'National Economics Challenge State Finalist; Wharton High School Investment Top 25',
+    projects: 'Algorithmic backtesting framework for momentum equities with Monte Carlo simulation',
+    leadership: 'Founder of High School Financial Literacy Initiative; conducted seminars for 200+ students',
+  },
+  {
+    label: 'Law & Policy',
+    targetField: 'Law, Policy & International Relations',
+    gpa: 'GPA: 3.98 UW / 4.6 W; AP US History (5), AP Gov (5), AP Lang (5), AP Lit',
+    tests: 'ACT: 35 (Reading: 36, English: 36, Math: 34, Science: 35)',
+    internships: 'Casework intern for State Senator district office; filed legislative briefing memos',
+    research: 'Author of 6,000-word treatise on 14th Amendment jurisprudence submitted to The Concord Review',
+    competitions: 'NSDA National Speech & Debate Tournament Qualifier (Lincoln-Douglas); Model UN Best Delegate',
+    projects: 'Civic engagement database tracking voting rights legislation across state assemblies',
+    leadership: 'Mock Trial Captain; President of High School Student Government Association',
+  },
+  {
+    label: 'Physics & Pure Math',
+    targetField: 'Physics & Pure Mathematics',
+    gpa: 'GPA: 3.97 UW / 4.7 W; Multivariable Calculus & Linear Algebra dual enrollment, AP Physics C',
+    tests: 'SAT: 1580 (Math: 800, EBRW: 780)',
+    internships: 'Summer research fellowship at university astrophysics numerical simulation lab',
+    research: 'First-author preprint on N-body gravitational perturbation theory posted to arXiv',
+    competitions: 'AIME Qualifier (Score: 9); USAPhO Semi-finalist; British Physics Olympiad Senior Gold',
+    projects: 'Numerical physics engine simulating relativistic particle collision trajectories in WebGL',
+    leadership: 'Math Circle Founder; organized weekly problem-solving seminars for high schoolers',
+  },
+];
 
 interface AspiringStudentUploaderProps {
   target: AspiringStudentTarget;
@@ -235,6 +296,49 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
     setUploadSuccess(`Profile updated successfully for ${editForm.name} (${editForm.targetField})!`);
   };
 
+  const handleStartBlankProfile = () => {
+    setEditForm({
+      name: 'New Candidate',
+      grade: 'Grade 10',
+      targetField: target.targetField || 'Computer Science & AI',
+      gpa: '',
+      tests: '',
+      internships: '',
+      research: '',
+      competitions: '',
+      projects: '',
+      leadership: '',
+    });
+    setIsEditingModalOpen(true);
+  };
+
+  const handleClearActivities = () => {
+    setEditForm((prev) => ({
+      ...prev,
+      gpa: '',
+      tests: '',
+      internships: '',
+      research: '',
+      competitions: '',
+      projects: '',
+      leadership: '',
+    }));
+  };
+
+  const handleApplyPreset = (preset: typeof OPTIONAL_ACTIVITY_PRESETS[0]) => {
+    setEditForm((prev) => ({
+      ...prev,
+      targetField: preset.targetField,
+      gpa: preset.gpa,
+      tests: preset.tests,
+      internships: preset.internships,
+      research: preset.research,
+      competitions: preset.competitions,
+      projects: preset.projects,
+      leadership: preset.leadership,
+    }));
+  };
+
   return (
     <div className="bg-white rounded-2xl p-6 sm:p-7 border border-stone-200/90 shadow-2xs space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-200">
@@ -252,7 +356,7 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <button
             type="button"
             onClick={handleDownloadTemplate}
@@ -261,6 +365,15 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
           >
             <Download className="w-3.5 h-3.5 text-stone-500" />
             <span>Download CSV Template</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleStartBlankProfile}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-stone-50 hover:bg-stone-100 text-stone-800 border border-stone-300 transition-all cursor-pointer shadow-2xs"
+            title="Start a fresh candidate profile with completely empty activities"
+          >
+            <UserPlus className="w-3.5 h-3.5 text-stone-600" />
+            <span>Start Blank Profile</span>
           </button>
           <button
             type="button"
@@ -458,6 +571,40 @@ export const AspiringStudentUploader: React.FC<AspiringStudentUploaderProps> = (
                   placeholder="e.g. Biomedical Engineering, Pure Mathematics, Cognitive Science..."
                   className="w-full text-xs px-3 py-2 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-stone-900 font-medium text-stone-900"
                 />
+              </div>
+
+              {/* Activities Control Panel: Clear All & Optional Presets */}
+              <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-stone-600 font-semibold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    Activities & Extracurricular Data
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={handleClearActivities}
+                    className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                    title="Clear all activity fields below to leave profile completely blank"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Clear All Activities</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
+                  <span className="text-stone-500 font-mono text-[10px] mr-1">Optional starter presets:</span>
+                  {OPTIONAL_ACTIVITY_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => handleApplyPreset(preset)}
+                      className="px-2 py-0.5 rounded bg-white hover:bg-stone-100 text-stone-700 border border-stone-200 font-medium transition-all cursor-pointer text-[10px]"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>

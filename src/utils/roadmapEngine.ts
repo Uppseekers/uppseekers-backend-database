@@ -142,19 +142,373 @@ export const SAMPLE_ASPIRING_PROFILES: {
   },
 ];
 
+export interface DetectedActivityEvidence {
+  milestoneId: string;
+  isCompleted: boolean;
+  category: string;
+  title: string;
+  evidenceSnippet: string;
+  dimension: 'problemSolving' | 'technicalSkills' | 'criticalThinking' | 'teamWork' | 'communication' | 'creativity';
+  pointsBoost: number;
+  reason: string;
+}
+
+/**
+ * Country & Tier Dynamic Benchmarking Engine
+ * Calculates the exact 6-dimensional requirements based on Target Country and University Tier Standard
+ */
+export function calculateCountryTierBenchmarks(
+  tier: RankTier,
+  country: string,
+  field: string
+) {
+  // 1. Tier Base Expectation (Stringent scaling: Top 5 is highest bar; Top 100 is most relaxed)
+  const rankTierBaseScores: Record<RankTier, number> = {
+    'Top 5': 93,
+    'Top 10': 88,
+    'Top 25': 81,
+    'Top 50': 74,
+    'Top 100': 68,
+  };
+
+  const base = rankTierBaseScores[tier] || 81;
+
+  // 2. Identify discipline & country contexts
+  const c = country.toLowerCase();
+  const isUK = c.includes('united kingdom') || c.includes('uk') || c.includes('britain');
+  const isUS = c.includes('united states') || c.includes('us');
+  const isCanada = c.includes('canada');
+  const isSingapore = c.includes('singapore');
+  const isSwitzerland = c.includes('switzerland') || c.includes('europe');
+  const isAustralia = c.includes('australia');
+
+  const f = field.toLowerCase();
+  const isCS = f.includes('cs') || f.includes('computer') || f.includes('software');
+  const isEngineering = !isCS && (f.includes('engineer') || f.includes('robot') || f.includes('aerospace'));
+  const isPreMed = f.includes('pre-med') || f.includes('med') || f.includes('bio') || f.includes('health');
+  const isEcon = f.includes('econ') || f.includes('finance') || f.includes('business') || f.includes('quant');
+  const isLaw = f.includes('law') || f.includes('policy') || f.includes('relation') || f.includes('gov') || f.includes('history');
+  const isPhysicsMath = f.includes('phys') || f.includes('math');
+  const isSTEM = isCS || isEngineering || isPhysicsMath || isPreMed;
+
+  // Country-specific admissions philosophies:
+  // US: Requires solid baseline across all 6 + prominent technical/extracurricular "spike"
+  // UK: Supercurricular depth & subject-specific academic mastery (tutors ignore generic sports/clubs)
+  // Canada: Academic rigor with applied co-op engineering/tech building
+  // Singapore: Strictly meritocratic examination cutoffs & Olympiad percentiles
+  // Switzerland: High mathematical/physics examination rigor
+  // Australia: Direct ATAR rank qualification
+  let psDelta = 0;
+  let tsDelta = 0;
+  let ctDelta = 0;
+  let twDelta = 0;
+  let cmDelta = 0;
+  let crDelta = 0;
+  let philosophy = '';
+
+  if (isUK) {
+    philosophy = 'UK Supercurricular Purity: Emphasizes deep academic & technical mastery in specific course; de-emphasizes generic well-roundedness and club titles.';
+    psDelta = isPhysicsMath || isCS ? 7 : isEngineering ? 6 : 4;
+    tsDelta = isCS || isEngineering ? 7 : isPreMed ? 5 : 3;
+    ctDelta = isLaw || isEcon ? 7 : 6; // High EPQ / scholarly reading emphasis
+    twDelta = -14; // UK admissions tutors explicitly state they don't weigh generic sports or school clubs
+    cmDelta = -8; // Focused on academic tutorial/interview presentation
+    crDelta = -9; // Focused on subject depth rather than business venture founding
+  } else if (isUS) {
+    philosophy = 'US Holistic & Angular Spike: Requires strong baseline across all 6 parameters plus at least one unmistakable domain or community spike.';
+    psDelta = isPhysicsMath || isCS || isEngineering ? 4 : 2;
+    tsDelta = isCS || isEngineering ? 5 : isPreMed ? 3 : 1;
+    ctDelta = 3;
+    twDelta = 2; // High value on athletic captaincy, collaboration & team synergy
+    cmDelta = 3; // High value on debate, student government & compelling narrative essays
+    crDelta = 3; // High value on novel inventions, venture founding & artistic mastery
+  } else if (isCanada) {
+    philosophy = 'Canada Applied Co-op Builders: Strong balance between academic marks (Waterloo contests) and practical engineering / project execution.';
+    psDelta = isCS || isEngineering || isPhysicsMath ? 5 : 3;
+    tsDelta = 5;
+    ctDelta = 2;
+    twDelta = 0;
+    cmDelta = -1;
+    crDelta = 1;
+  } else if (isSingapore) {
+    philosophy = 'Singapore Percentile & Olympiad Meritocracy: Strict scholastic cutoffs, Olympiad medals, and rigorous academic endurance.';
+    psDelta = 6;
+    tsDelta = 4;
+    ctDelta = 4;
+    twDelta = -5;
+    cmDelta = 0;
+    crDelta = -3;
+  } else if (isSwitzerland) {
+    philosophy = 'Swiss & European Examination Rigor: Maximum theoretical foundations, advanced differential equations, and formal entrance exams.';
+    psDelta = 8;
+    tsDelta = 5;
+    ctDelta = 5;
+    twDelta = -10;
+    cmDelta = -5;
+    crDelta = -4;
+  } else if (isAustralia) {
+    philosophy = 'Australia Direct ATAR Rank Qualification: Direct percentile rank entry focused on prerequisite subject scores.';
+    psDelta = 4;
+    tsDelta = 2;
+    ctDelta = 3;
+    twDelta = -2;
+    cmDelta = 0;
+    crDelta = -1;
+  } else {
+    // All Global
+    philosophy = 'Global Selective Standard: Balanced international benchmark combining academic Olympiads, research preprints, and verifiable domain depth.';
+    psDelta = isSTEM ? 4 : 2;
+    tsDelta = isSTEM ? 4 : 1;
+    ctDelta = 3;
+    twDelta = -1;
+    cmDelta = 1;
+    crDelta = 1;
+  }
+
+  // Calculate raw dimension scores
+  const problemSolving = Math.min(99, Math.max(35, base + psDelta));
+  const technicalSkills = Math.min(99, Math.max(35, base + tsDelta));
+  const criticalThinking = Math.min(99, Math.max(35, base + ctDelta));
+  const teamWork = Math.min(98, Math.max(35, base + twDelta));
+  const communication = Math.min(98, Math.max(35, base + cmDelta));
+  const creativity = Math.min(98, Math.max(35, base + crDelta));
+
+  // Strict Point Harmonization: Total Points = Sum of the 6 dimensions
+  const totalPoints = problemSolving + technicalSkills + criticalThinking + teamWork + communication + creativity;
+  // Normalized aggregate = integer average of 6 dimensions
+  const compositeScore = Math.round(totalPoints / 6);
+
+  return {
+    problemSolving,
+    technicalSkills,
+    criticalThinking,
+    teamWork,
+    communication,
+    creativity,
+    totalPoints,
+    compositeScore,
+    countryPhilosophy: philosophy,
+  };
+}
+
+/**
+ * Inspects a student's baseline dossier to detect activities that the student has already completed
+ */
+export function detectProfileCompletedActivities(
+  target: AspiringStudentTarget,
+  baseline: AspiringStudentBaseline
+): DetectedActivityEvidence[] {
+  const detected: DetectedActivityEvidence[] = [];
+
+  const gpa = (baseline.gpaRigor || '').trim();
+  const tests = (baseline.testingStatus || '').trim();
+  const intern = (baseline.internshipsWork || '').trim();
+  const research = (baseline.researchExperience || '').trim();
+  const comps = (baseline.competitionsHonors || '').trim();
+  const projs = (baseline.technicalProjects || '').trim();
+  const lead = (baseline.leadershipActivities || '').trim();
+
+  // Helper to test multiple keywords
+  const hasKw = (text: string, kws: string[]): boolean => {
+    const l = text.toLowerCase();
+    return kws.some((kw) => l.includes(kw.toLowerCase()));
+  };
+
+  // 1. Academics / GPA Rigor
+  if (gpa.length > 15 && !gpa.toLowerCase().includes('none') && !gpa.toLowerCase().includes('not recorded')) {
+    detected.push({
+      milestoneId: 'g9-cert-1',
+      isCompleted: true,
+      category: 'certification',
+      title: 'Academic Anchor & Foundation Rigor',
+      evidenceSnippet: gpa,
+      dimension: 'criticalThinking',
+      pointsBoost: 8,
+      reason: 'Verified strong GPA and advanced curriculum coursework from candidate profile',
+    });
+  }
+
+  // 2. Standardized Testing (Completed / High Score)
+  if (
+    tests.length > 10 &&
+    (hasKw(tests, ['sat: 15', 'sat: 14', 'act: 3', 'psat', 'predicted', 'ib diploma', '1530', '1540', '1550', '1560', '1570', '1580', '1600']) ||
+      (tests.includes('SAT') && !tests.includes('Not taken')))
+  ) {
+    detected.push({
+      milestoneId: 'g11-test-1',
+      isCompleted: true,
+      category: 'certification',
+      title: 'Standardized Testing & Admissions Assessments Benchmark',
+      evidenceSnippet: tests,
+      dimension: 'problemSolving',
+      pointsBoost: 10,
+      reason: 'Verified standardized test scores or active examination preparation logged in profile',
+    });
+  }
+
+  // 3. Competitions & Olympiads (Grade 9 / 10 level)
+  if (
+    comps.length > 10 &&
+    !comps.toLowerCase().includes('none') &&
+    !comps.toLowerCase().includes('not recorded')
+  ) {
+    detected.push({
+      milestoneId: 'g9-comp-1',
+      isCompleted: true,
+      category: 'competition',
+      title: 'First-Round Olympiads & Contest Benchmarking',
+      evidenceSnippet: comps,
+      dimension: 'problemSolving',
+      pointsBoost: 10,
+      reason: 'Documented contest achievements and Olympiad rankings recorded in profile',
+    });
+
+    // Check for advanced regional/national honors (AIME, USABO, BPhO, Gold, State, National)
+    if (hasKw(comps, ['aime', 'gold', 'silver', 'bpho', 'usabo', 'finalist', 'champion', '1st place', 'national', 'state finalist', 'usamo', 'ukmt'])) {
+      detected.push({
+        milestoneId: 'g10-comp-1',
+        isCompleted: true,
+        category: 'competition',
+        title: 'National/Regional Competition Distinction',
+        evidenceSnippet: comps,
+        dimension: 'problemSolving',
+        pointsBoost: 12,
+        reason: 'Verified advanced medal, qualifier honor, or high percentile contest standing',
+      });
+    }
+  }
+
+  // 4. Internships & Laboratory Shadowing
+  if (
+    intern.length > 10 &&
+    !intern.toLowerCase().includes('none') &&
+    !intern.toLowerCase().includes('not recorded')
+  ) {
+    detected.push({
+      milestoneId: 'g9-intern-1',
+      isCompleted: true,
+      category: 'internship',
+      title: 'Industry / Clinical Shadowing & Apprenticeship',
+      evidenceSnippet: intern,
+      dimension: 'teamWork',
+      pointsBoost: 8,
+      reason: 'Logged industry apprenticeship, clinical volunteer rotations, or technical firm shadowing',
+    });
+
+    if (hasKw(intern, ['research', 'lab', 'assistant', 'engineer', 'developer', 'startup', 'fellow', 'casework', 'advisory'])) {
+      detected.push({
+        milestoneId: 'g10-intern-1',
+        isCompleted: true,
+        category: 'internship',
+        title: 'Structured Lab Placement / Engineering Fellowship',
+        evidenceSnippet: intern,
+        dimension: 'technicalSkills',
+        pointsBoost: 10,
+        reason: 'Substantive role in professional lab, software engineering team, or district office',
+      });
+    }
+  }
+
+  // 5. Research Experience & Publications
+  if (
+    research.length > 10 &&
+    !research.toLowerCase().includes('none') &&
+    !research.toLowerCase().includes('not recorded')
+  ) {
+    detected.push({
+      milestoneId: 'g10-research-1',
+      isCompleted: true,
+      category: 'research',
+      title: 'Independent Inquiry & Literature Review Draft',
+      evidenceSnippet: research,
+      dimension: 'criticalThinking',
+      pointsBoost: 10,
+      reason: 'Independent scholarly investigation, empirical model, or extended essay recorded',
+    });
+
+    if (hasKw(research, ['preprint', 'paper', 'biorxiv', 'arxiv', 'ssrn', 'published', 'journal', 'isef', 'concord review', 'manuscript'])) {
+      detected.push({
+        milestoneId: 'g11-research-1',
+        isCompleted: true,
+        category: 'research',
+        title: 'First-Author Preprint / Scholarly Publication',
+        evidenceSnippet: research,
+        dimension: 'criticalThinking',
+        pointsBoost: 14,
+        reason: 'Verified peer-reviewed manuscript, preprint submission, or national science fair paper',
+      });
+    }
+  }
+
+  // 6. Technical Projects & Artifacts
+  if (
+    projs.length > 10 &&
+    !projs.toLowerCase().includes('none') &&
+    !projs.toLowerCase().includes('not recorded')
+  ) {
+    detected.push({
+      milestoneId: 'g9-proj-1',
+      isCompleted: true,
+      category: 'research',
+      title: 'Public Software / Engineering Artifact Deployment',
+      evidenceSnippet: projs,
+      dimension: 'technicalSkills',
+      pointsBoost: 10,
+      reason: 'Functional open-source repository, working hardware mechanism, or deployed prototype',
+    });
+  }
+
+  // 7. Leadership, Non-Profit & Peer Mentorship
+  if (
+    lead.length > 10 &&
+    !lead.toLowerCase().includes('none') &&
+    !lead.toLowerCase().includes('not recorded')
+  ) {
+    detected.push({
+      milestoneId: 'g9-lead-1',
+      isCompleted: true,
+      category: 'leadership',
+      title: 'Peer Mentorship & Academic Club Executive',
+      evidenceSnippet: lead,
+      dimension: 'communication',
+      pointsBoost: 8,
+      reason: 'Verified leadership position in school club, math circle, or peer mentoring group',
+    });
+
+    if (hasKw(lead, ['founder', 'co-founder', 'president', 'captain', 'chair', '1,000', '501(c)(3)', 'organized', 'director', 'coalition'])) {
+      detected.push({
+        milestoneId: 'g11-lead-1',
+        isCompleted: true,
+        category: 'leadership',
+        title: 'Flagship Initiative Founding / Scaled Community Reach',
+        evidenceSnippet: lead,
+        dimension: 'creativity',
+        pointsBoost: 12,
+        reason: 'Documented executive founder role, community initiative, or varsity team leadership',
+      });
+    }
+  }
+
+  return detected;
+}
+
 /**
  * Evaluates an aspiring student baseline against the 6 MLS dimensions
+ * Incorporates points from documented evidence and verified completed activities
  */
-export function evaluateAspiringBaseline(baseline: AspiringStudentBaseline) {
+export function evaluateAspiringBaseline(
+  baseline: AspiringStudentBaseline,
+  target?: AspiringStudentTarget
+) {
   // Synthesize a dummy StudentProfile to leverage our proven 6-aspect evaluation engine
   const syntheticProfile = {
     id: 'aspirant-eval-temp',
-    name: 'Aspirant',
-    university: 'Target University',
-    course: 'Target Major',
+    name: target?.studentName || 'Aspirant',
+    university: target?.targetUniversity || 'Target University',
+    course: target?.targetField || 'Target Major',
     linkedin: '',
     academicsPerformance: baseline.gpaRigor,
-    classOf: '2028',
+    classOf: target?.targetClassOf || '2028',
     apTaken: baseline.gpaRigor,
     actSat: baseline.testingStatus,
     languageTest: '',
@@ -176,14 +530,53 @@ export function evaluateAspiringBaseline(baseline: AspiringStudentBaseline) {
     return d ? d.score : 45;
   };
 
+  // Check if profile is completely blank
+  const isBlank =
+    !baseline.gpaRigor &&
+    !baseline.testingStatus &&
+    !baseline.internshipsWork &&
+    !baseline.researchExperience &&
+    !baseline.competitionsHonors &&
+    !baseline.technicalProjects &&
+    !baseline.leadershipActivities;
+
+  if (isBlank) {
+    return {
+      problemSolving: 30,
+      technicalSkills: 30,
+      criticalThinking: 30,
+      teamWork: 30,
+      communication: 30,
+      creativity: 30,
+      totalPoints: 180,
+      compositeScore: 30,
+      completedMilestoneCount: 0,
+    };
+  }
+
+  // Detect completed activities from documented baseline
+  const detected = target ? detectProfileCompletedActivities(target, baseline) : [];
+
+  const rawPS = Math.max(35, getScore('problemSolving'));
+  const rawTS = Math.max(35, getScore('technicalSkills'));
+  const rawCT = Math.max(35, getScore('criticalThinking'));
+  const rawTW = Math.max(35, getScore('teamWork'));
+  const rawCM = Math.max(35, getScore('communication'));
+  const rawCR = Math.max(35, getScore('creativity'));
+
+  const totalPoints = rawPS + rawTS + rawCT + rawTW + rawCM + rawCR;
+  const compositeScore = Math.round(totalPoints / 6);
+
   return {
-    problemSolving: Math.max(30, getScore('problemSolving')),
-    technicalSkills: Math.max(30, getScore('technicalSkills')),
-    criticalThinking: Math.max(30, getScore('criticalThinking')),
-    teamWork: Math.max(30, getScore('teamWork')),
-    communication: Math.max(30, getScore('communication')),
-    creativity: Math.max(30, getScore('creativity')),
-    compositeScore: evalResult.compositeScore,
+    problemSolving: rawPS,
+    technicalSkills: rawTS,
+    criticalThinking: rawCT,
+    teamWork: rawTW,
+    communication: rawCM,
+    creativity: rawCR,
+    totalPoints,
+    compositeScore,
+    completedMilestoneCount: detected.length,
   };
 }
 
@@ -222,40 +615,19 @@ export function generateBackEngineeredPath(
   );
   const cohortPool = fieldMatched.length >= 10 ? fieldMatched : matched;
 
-  // 2. Compute Cohort Benchmark medians for 6 MLS dimensions
-  // Target benchmark expectations by rank tier:
-  const rankTierBaseScores: Record<RankTier, number> = {
-    'Top 5': 92,
-    'Top 10': 87,
-    'Top 25': 82,
-    'Top 50': 76,
-    'Top 100': 70,
-  };
-
-  const baseExpectation = rankTierBaseScores[target.targetRankTier] || 82;
-
-  const cohortBenchmarks = {
-    problemSolving: Math.min(99, baseExpectation + (target.targetField.includes('CS') || target.targetField.includes('Engineering') || target.targetField.includes('Math') ? 5 : 0)),
-    technicalSkills: Math.min(99, baseExpectation + (target.targetField.includes('CS') || target.targetField.includes('Engineering') ? 6 : -2)),
-    criticalThinking: Math.min(99, baseExpectation + (target.targetField.includes('Pre-Med') || target.targetField.includes('Economics') ? 4 : 1)),
-    teamWork: Math.min(98, baseExpectation - 2),
-    communication: Math.min(98, baseExpectation + (target.targetField.includes('Economics') || target.targetField.includes('Humanities') ? 5 : 0)),
-    creativity: Math.min(98, baseExpectation + 1),
-    compositeScore: 0,
-  };
-  cohortBenchmarks.compositeScore = Math.round(
-    (cohortBenchmarks.problemSolving +
-      cohortBenchmarks.technicalSkills +
-      cohortBenchmarks.criticalThinking +
-      cohortBenchmarks.teamWork +
-      cohortBenchmarks.communication +
-      cohortBenchmarks.creativity) / 6
+  // 2. Compute Dynamically Harmonized Cohort Benchmarks (Governed by Country & University Tier Standard)
+  const cohortBenchmarks = calculateCountryTierBenchmarks(
+    target.targetRankTier,
+    target.targetCountry,
+    target.targetField
   );
 
-  // 3. Compute Aspiring Baseline Scores
-  const aspirantScores = evaluateAspiringBaseline(baseline);
+  // 3. Compute Aspiring Baseline Scores (Explicitly linked to documented activities)
+  const aspirantScores = evaluateAspiringBaseline(baseline, target);
+  const detectedActivities = detectProfileCompletedActivities(target, baseline);
 
   // 4. Compute Current Readiness Score (0 - 100%)
+  // Normalized comparison against cohort benchmarks
   const scoreDeltas = [
     aspirantScores.problemSolving / cohortBenchmarks.problemSolving,
     aspirantScores.technicalSkills / cohortBenchmarks.technicalSkills,
@@ -273,7 +645,10 @@ export function generateBackEngineeredPath(
     'Grade 11': 1.05,
     'Grade 12': 1.0,
   };
-  const readinessRaw = Math.min(98, Math.max(25, Math.round(averageRatio * 75 * (gradeNormalization[target.currentGrade] || 1))));
+  const readinessRaw = Math.min(
+    98,
+    Math.max(25, Math.round(averageRatio * 75 * (gradeNormalization[target.currentGrade] || 1)))
+  );
   const readinessScore = Math.min(94, readinessRaw);
 
   // 5. Synthesize Back-Engineered Milestones chronologically
@@ -300,7 +675,7 @@ export function generateBackEngineeredPath(
 
   const projectedReadinessScore = Math.min(96, Math.max(readinessScore + 28, 89));
 
-  // 7. Find Top 3 Doppelgängers (most similar admitted students from the 1,500 cohort)
+  // 7. Find Top 3 Doppelgängers
   const topDoppelgangers = cohortPool.slice(0, 3);
 
   // 8. Identify Primary Gaps and Actionable Remedies
@@ -318,6 +693,7 @@ export function generateBackEngineeredPath(
     milestones,
     topDoppelgangers,
     primaryGaps,
+    detectedActivities,
   };
 }
 

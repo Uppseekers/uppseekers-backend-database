@@ -22,6 +22,7 @@ interface UniversityAdmissionsSummaryProps {
   targetCountry: string;
   targetUniversity?: string;
   targetRankTier: RankTier;
+  targetField?: string;
   onSelectUniversity?: (uniName: string) => void;
 }
 
@@ -29,6 +30,7 @@ export const UniversityAdmissionsSummary: React.FC<UniversityAdmissionsSummaryPr
   targetCountry,
   targetUniversity,
   targetRankTier,
+  targetField,
   onSelectUniversity,
 }) => {
   // Active sub-tab: 'institutional_vision' | 'cross_country_matrix' | 'multi_country_trap'
@@ -41,28 +43,36 @@ export const UniversityAdmissionsSummary: React.FC<UniversityAdmissionsSummaryPr
     targetCountry === 'United Kingdom' ? 'United Kingdom' : 'United States'
   );
 
-  // Get active university vision data based on current target
+  // Get active university vision data dynamically based on current target country, tier, and discipline
   const visionData: UniversityVisionInfo = getUniversityVisionData(
     targetUniversity,
-    targetCountry
+    targetCountry,
+    targetRankTier,
+    targetField
   );
 
   return (
-    <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/90 shadow-2xs space-y-6">
+    <div id="admissions-philosophy-module" className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/90 shadow-2xs space-y-6 print:hidden">
       {/* Header with Title and Mode Switcher */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-stone-200">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-stone-500 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-stone-500 uppercase tracking-wider mb-1 flex-wrap">
             <span>Admissions Philosophy & Institutional Ethos</span>
             <span>·</span>
-            <span>{targetUniversity || `${targetCountry} (${targetRankTier})`}</span>
+            <span className="font-semibold text-stone-800 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
+              {targetCountry && targetCountry !== 'All Global' ? `${targetCountry} (${targetRankTier})` : `Global Standard (${targetRankTier})`}
+            </span>
+            <span>·</span>
+            <span className="font-semibold text-stone-900 bg-stone-100 border border-stone-300 px-2 py-0.5 rounded">
+              {visionData.universityName}
+            </span>
           </div>
 
           <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 tracking-tight">
             What Universities Look For in a Candidate Dossier
           </h3>
           <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-3xl leading-relaxed">
-            Many high-achieving applicants get rejected not because their profile is weak, but because it is calibrated for the wrong country’s admissions philosophy. Discover how <strong className="text-stone-900">{visionData.shortName}</strong> and <strong className="text-stone-900">{targetCountry}</strong> specifically evaluate candidates, and how institutional vision dictates selection.
+            Many high-achieving applicants get rejected not because their profile is weak, but because it is calibrated for the wrong country’s admissions philosophy. Discover how <strong className="text-stone-900">{visionData.shortName}</strong> ({visionData.country}) and <strong className="text-stone-900">{targetCountry}</strong> peer institutions specifically evaluate candidates, and how institutional vision dictates selection.
           </p>
         </div>
 
@@ -104,34 +114,53 @@ export const UniversityAdmissionsSummary: React.FC<UniversityAdmissionsSummaryPr
         </div>
       </div>
 
-      {/* QUICK INSTITUTION PRESETS */}
+      {/* QUICK INSTITUTION PRESETS (Dynamically filtered by Target Country) */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none text-xs">
         <span className="text-stone-400 font-mono text-[11px] uppercase tracking-wider shrink-0">
-          Institution Dossiers:
+          {targetCountry && targetCountry !== 'All Global' ? `${targetCountry} Dossiers:` : 'Institution Dossiers:'}
         </span>
-        {Object.entries(UNIVERSITY_VISIONS).map(([key, uni]) => {
-          const isSelected =
-            targetUniversity &&
-            (targetUniversity.toLowerCase().includes(key) ||
-              key.includes(targetUniversity.toLowerCase()) ||
-              targetUniversity.toLowerCase().includes(uni.shortName.toLowerCase()));
+        {(() => {
+          const allEntries = Object.entries(UNIVERSITY_VISIONS);
+          const cNorm = (targetCountry || '').toLowerCase();
+          const countryMatched = allEntries.filter(([_, uni]) => {
+            const uniCountry = uni.country.toLowerCase();
+            if (cNorm.includes('kingdom') || cNorm.includes('uk')) return uniCountry.includes('kingdom') || uniCountry.includes('uk');
+            if (cNorm.includes('states') || cNorm.includes('us')) return uniCountry.includes('states') || uniCountry.includes('us');
+            if (cNorm.includes('canada')) return uniCountry.includes('canada');
+            if (cNorm.includes('singapore')) return uniCountry.includes('singapore');
+            if (cNorm.includes('switzerland') || cNorm.includes('europe')) return uniCountry.includes('switzerland') || uniCountry.includes('europe');
+            if (cNorm.includes('australia')) return uniCountry.includes('australia');
+            return true;
+          });
 
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onSelectUniversity && onSelectUniversity(uni.universityName)}
-              className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all border shrink-0 cursor-pointer ${
-                isSelected
-                  ? 'bg-stone-900 text-stone-100 border-stone-900 font-semibold'
-                  : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100 hover:border-stone-300'
-              }`}
-            >
-              <span>{uni.shortName}</span>
-              <span className="text-[10px] font-mono text-stone-400 ml-1">#{uni.rank}</span>
-            </button>
-          );
-        })}
+          const entriesToRender = countryMatched.length > 0 ? countryMatched : allEntries;
+
+          return entriesToRender.map(([key, uni]) => {
+            const isSelected =
+              visionData.shortName === uni.shortName ||
+              (targetUniversity &&
+                (targetUniversity.toLowerCase().includes(key) ||
+                  key.includes(targetUniversity.toLowerCase()) ||
+                  targetUniversity.toLowerCase().includes(uni.shortName.toLowerCase())));
+
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onSelectUniversity && onSelectUniversity(uni.universityName)}
+                className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all border shrink-0 cursor-pointer ${
+                  isSelected
+                    ? 'bg-stone-900 text-stone-100 border-stone-900 font-semibold'
+                    : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100 hover:border-stone-300'
+                }`}
+              >
+                <span>{uni.shortName}</span>
+                <span className="text-[10px] font-mono text-stone-400 ml-1">#{uni.rank}</span>
+                <span className="text-[10px] text-stone-400 ml-1">({uni.country})</span>
+              </button>
+            );
+          });
+        })()}
       </div>
 
       {/* SUB-TAB 1: INSTITUTIONAL ETHOS & SELECTION CRITERIA */}
@@ -395,10 +424,10 @@ export const UniversityAdmissionsSummary: React.FC<UniversityAdmissionsSummaryPr
 
               <div className="p-4 bg-stone-50 rounded-lg border border-stone-200 space-y-1.5">
                 <span className="font-semibold text-stone-900 block">
-                  2. Disseminate for Community Impact (US, Singapore)
+                  2. Disseminate for Community Impact (Holistic Systems)
                 </span>
                 <p className="text-[11px] text-stone-600 leading-relaxed">
-                  Take the exact same technical research or coding project and open-source it, run community workshops, or found an initiative mentoring younger peers. This demonstrates the leadership and character that MIT, Harvard, and Stanford demand.
+                  Take the exact same technical research or coding project and open-source it, run community workshops, or found an initiative mentoring younger peers. This demonstrates the leadership, collaborative warmth, and civic character that {targetCountry === 'United States' ? `${visionData.shortName}, Stanford, and Harvard` : targetCountry === 'United Kingdom' ? `${visionData.shortName}, Oxford, and Cambridge` : targetCountry === 'Canada' ? `${visionData.shortName} and Waterloo` : targetCountry === 'Singapore' ? 'NUS and NTU' : `${visionData.shortName} and premier peer institutions`} prioritize.
                 </p>
               </div>
             </div>

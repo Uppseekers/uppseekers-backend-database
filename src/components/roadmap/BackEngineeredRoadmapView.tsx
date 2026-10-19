@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertCircle,
   FileText,
+  Download,
 } from 'lucide-react';
 import {
   AdmittedStudentProfile,
@@ -25,14 +26,23 @@ import {
 import {
   SAMPLE_ASPIRING_PROFILES,
   generateBackEngineeredPath,
+  detectProfileCompletedActivities,
 } from '../../utils/roadmapEngine';
 import { TOP_UNIVERSITIES, UniversityMeta } from '../../data/admittedStudents1500';
-import { SpiderChart } from '../SpiderChart';
+import { SpiderChart, CustomSpiderEvaluation } from '../SpiderChart';
 import { AspiringStudentUploader } from './AspiringStudentUploader';
 import { TrajectoryTwoLineChart } from './TrajectoryTwoLineChart';
-import { SupercurricularMilestonesView } from './SupercurricularMilestonesView';
+import {
+  SupercurricularMilestonesView,
+  getMilestoneCountForTier,
+} from './SupercurricularMilestonesView';
 import { UniversityAdmissionsSummary } from './UniversityAdmissionsSummary';
-import { LookalikeAdmittedStudents } from './LookalikeAdmittedStudents';
+import { AspirantReportDrawer } from './AspirantReportDrawer';
+import {
+  triggerDossierPrint,
+  generatePrintableDossierHTML,
+  downloadDossierHTML,
+} from '../../utils/printReport';
 
 interface BackEngineeredRoadmapViewProps {
   cohort1500: AdmittedStudentProfile[];
@@ -64,6 +74,14 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
     SAMPLE_ASPIRING_PROFILES[0].baseline
   );
 
+  // Aspirant Report Drawer state
+  const [isReportDrawerOpen, setIsReportDrawerOpen] = useState(false);
+  const [reportDrawerTab, setReportDrawerTab] = useState<'preview' | 'gap_analysis' | 'markdown'>('preview');
+  const [milestonesMeta, setMilestonesMeta] = useState<{ total: number; completed: number }>({
+    total: getMilestoneCountForTier(target.targetRankTier),
+    completed: 0,
+  });
+
   // Filter available universities based on selected target rank tier and country
   const universitiesInActiveTier = useMemo(() => {
     return TOP_UNIVERSITIES.filter((uni) => {
@@ -93,6 +111,106 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
     return generateBackEngineeredPath(target, baseline, cohort1500);
   }, [target, baseline, cohort1500]);
 
+  // Exact 6-Dimensional Radar Custom Evaluation matching pathData.cohortBenchmarks and pathData.aspirantScores
+  const radarCustomEvaluations: CustomSpiderEvaluation[] = useMemo(() => {
+    return [
+      {
+        studentId: 'aspirant-profile',
+        studentName: `${target.studentName} (Current Profile)`,
+        compositeScore: pathData.aspirantScores.compositeScore,
+        totalPoints: pathData.aspirantScores.totalPoints,
+        dimensions: [
+          {
+            key: 'problemSolving',
+            label: 'Problem Solving',
+            score: pathData.aspirantScores.problemSolving,
+            evidence: `Contests, mathematical modeling, contest percentiles: ${pathData.aspirantScores.problemSolving}/100 pts`,
+          },
+          {
+            key: 'technicalSkills',
+            label: 'Technical Skills',
+            score: pathData.aspirantScores.technicalSkills,
+            evidence: `Applied engineering, code implementations, lab assays: ${pathData.aspirantScores.technicalSkills}/100 pts`,
+          },
+          {
+            key: 'criticalThinking',
+            label: 'Critical Thinking',
+            score: pathData.aspirantScores.criticalThinking,
+            evidence: `Scholarly inquiry, analytical literature synthesis: ${pathData.aspirantScores.criticalThinking}/100 pts`,
+          },
+          {
+            key: 'teamWork',
+            label: 'Team Work',
+            score: pathData.aspirantScores.teamWork,
+            evidence: `Team robotics, hackathons, lab co-investigation: ${pathData.aspirantScores.teamWork}/100 pts`,
+          },
+          {
+            key: 'communication',
+            label: 'Communication',
+            score: pathData.aspirantScores.communication,
+            evidence: `Debate, essay treatises, symposium presentations: ${pathData.aspirantScores.communication}/100 pts`,
+          },
+          {
+            key: 'creativity',
+            label: 'Creativity',
+            score: pathData.aspirantScores.creativity,
+            evidence: `Venture creation, novel engineering, artistic synthesis: ${pathData.aspirantScores.creativity}/100 pts`,
+          },
+        ],
+      },
+      {
+        studentId: 'required-target-profile',
+        studentName: `${target.targetRankTier} Benchmark (${target.targetCountry})`,
+        compositeScore: pathData.cohortBenchmarks.compositeScore,
+        totalPoints: pathData.cohortBenchmarks.totalPoints,
+        dimensions: [
+          {
+            key: 'problemSolving',
+            label: 'Problem Solving',
+            score: pathData.cohortBenchmarks.problemSolving,
+            evidence: `${target.targetRankTier} ${target.targetCountry} requirement: ${pathData.cohortBenchmarks.problemSolving}/100 pts`,
+          },
+          {
+            key: 'technicalSkills',
+            label: 'Technical Skills',
+            score: pathData.cohortBenchmarks.technicalSkills,
+            evidence: `${target.targetRankTier} ${target.targetCountry} requirement: ${pathData.cohortBenchmarks.technicalSkills}/100 pts`,
+          },
+          {
+            key: 'criticalThinking',
+            label: 'Critical Thinking',
+            score: pathData.cohortBenchmarks.criticalThinking,
+            evidence: `${target.targetRankTier} ${target.targetCountry} requirement: ${pathData.cohortBenchmarks.criticalThinking}/100 pts`,
+          },
+          {
+            key: 'teamWork',
+            label: 'Team Work',
+            score: pathData.cohortBenchmarks.teamWork,
+            evidence: `${target.targetRankTier} ${target.targetCountry} requirement: ${pathData.cohortBenchmarks.teamWork}/100 pts`,
+          },
+          {
+            key: 'communication',
+            label: 'Communication',
+            score: pathData.cohortBenchmarks.communication,
+            evidence: `${target.targetRankTier} ${target.targetCountry} requirement: ${pathData.cohortBenchmarks.communication}/100 pts`,
+          },
+          {
+            key: 'creativity',
+            label: 'Creativity',
+            score: pathData.cohortBenchmarks.creativity,
+            evidence: `${target.targetRankTier} ${target.targetCountry} requirement: ${pathData.cohortBenchmarks.creativity}/100 pts`,
+          },
+        ],
+      },
+    ];
+  }, [
+    target.studentName,
+    target.targetRankTier,
+    target.targetCountry,
+    pathData.aspirantScores,
+    pathData.cohortBenchmarks,
+  ]);
+
   // Construct dummy StudentProfile for Spider Chart visualization
   const studentForRadar: StudentProfile = {
     id: 'aspirant-profile',
@@ -115,22 +233,152 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
     notes: '',
   };
 
-  // Required Profile Calibration (Calibrated per Tier & Discipline from thousands of admitted students)
+  // Required Profile Calibration (Calibrated per Tier, Target Country & Discipline)
   const requiredProfile = useMemo(() => {
     const isTop5 = target.targetRankTier === 'Top 5';
     const isTop10 = target.targetRankTier === 'Top 10' || isTop5;
     const isTop25 = target.targetRankTier === 'Top 25';
     const isTop50 = target.targetRankTier === 'Top 50';
 
+    const c = target.targetCountry.toLowerCase();
+    const isUK = c.includes('united kingdom') || c.includes('uk') || c.includes('britain');
+    const isUS = c.includes('united states') || c.includes('us');
+    const isCanada = c.includes('canada');
+    const isSingapore = c.includes('singapore');
+    const isSwitzerland = c.includes('switzerland') || c.includes('europe');
+    const isAustralia = c.includes('australia');
+
     const f = target.targetField.toLowerCase();
     const isCS = f.includes('cs') || f.includes('computer') || f.includes('software');
     const isEngineering = !isCS && (f.includes('engineer') || f.includes('robot') || f.includes('aerospace'));
     const isPreMed = f.includes('pre-med') || f.includes('med') || f.includes('bio') || f.includes('health');
     const isEcon = f.includes('econ') || f.includes('finance') || f.includes('business') || f.includes('quant');
-    const isLaw = f.includes('law') || f.includes('policy') || f.includes('relation') || f.includes('gov') || f.includes('history') || f.includes('humanit');
+    const isLaw = f.includes('law') || f.includes('policy') || f.includes('relation') || f.includes('gov') || f.includes('history');
     const isPhysicsMath = f.includes('phys') || f.includes('math');
 
+    if (isUK) {
+      return {
+        countryAdmissionModel: 'United Kingdom Admissions Standard (UCAS & Oxbridge Criteria)',
+        academicBar: isTop5
+          ? 'Predicted 42–44/45 in IB Diploma (with 7, 7 in Higher Level core subjects) or A*A*A* at A-Level in required discipline'
+          : isTop10
+          ? 'Predicted 40–42/45 in IB (with 7, 6 in HL) or A*A*A at A-Level in relevant subjects'
+          : isTop25
+          ? 'Predicted 38–40/45 in IB or A*AA at A-Level with strong subject alignment'
+          : isTop50
+          ? 'Predicted 36–38/45 in IB or AAA at A-Level'
+          : 'Predicted 34–36/45 in IB or AAB at A-Level',
+        testingBar: isTop5
+          ? 'Cambridge ESAT / TMUA (Score 7.0+), Oxford PAT/MAT, STEP 1 & 2 (Grade 1/S), or UCAT (3100+ Band 1)'
+          : isTop10
+          ? 'TMUA (6.5+), Oxford TSA (70+), STEP 2/3, or UCAT (2950+ Band 1/2)'
+          : isTop25
+          ? 'Course Admissions Assessment (TMUA / UCAT / LNAT) top quartile score'
+          : 'Standard admissions entrance exam or GCSE subject profile verification',
+        supercurriculars: {
+          research: isTop5
+            ? '5,000-word Extended Project Qualification (EPQ) graded A*, faculty bibliography scholarly critiques, or paper in Young Scientists journal'
+            : isTop10
+            ? 'Structured EPQ (Grade A) or independent extended essay exploring university-level literature'
+            : 'Independent subject inquiry notebook, essay competition submission, or critical reading digest',
+          competitions: isTop5
+            ? 'British Physics Olympiad (BPhO) Senior Gold, UKMT Senior Maths Challenge Gold & Maclaurin distinction, or Cambridge Chemistry Challenge Roentgenium'
+            : isTop10
+            ? 'UKMT Senior Gold / Kangaroo qualifier, BPhO Senior Challenge Silver, or British Biology Olympiad Silver'
+            : 'UKMT Senior Silver or regional subject challenge participant',
+          internships: isTop5
+            ? 'University faculty research laboratory shadowing (In2scienceUK, Sutton Trust), or hospital clinical shadowing (60+ hrs)'
+            : isTop10
+            ? 'University department summer research placement or engineering firm apprenticeship'
+            : 'Local professional shadowing or university public research colloquium attendance',
+          certifications: isTop5
+            ? 'Oxford/Cambridge faculty recommended reading list synthesis and advanced proof/calculus credentials'
+            : 'Advanced subject MOOC credentials or Royal Society of Chemistry / IOP modules',
+          leadership: isTop5
+            ? `Head of Academic Subject Society in ${target.targetField}, student academic journal editor, or peer tutorial mentor (Note: UCAS explicitly ignores generic sports captaincy or unrelated volunteering)`
+            : 'School subject club executive or academic debate society leader',
+        },
+        executiveConclusion: isTop5
+          ? `UK elite admissions (Oxford, Cambridge, Imperial) prioritize supercurricular depth and academic purity over general well-roundedness. 80%+ of UCAS personal statements must focus on scholarly exploration. Tutors assess tutorial dialogue readiness and admissions test cutoffs (ESAT/TMUA/STEP). Generic volunteering or sports are de-emphasized.`
+          : isTop10
+          ? `Russell Group Top 10 institutions require focused supercurricular reading and high admissions assessment percentiles in ${target.targetField}.`
+          : `UK admissions focus heavily on predicted grades in relevant prerequisite subjects and demonstrated subject enthusiasm.`,
+      };
+    }
+
+    if (isCanada) {
+      return {
+        countryAdmissionModel: 'Canada Admissions Standard (Academic Rigor & Co-op Builders)',
+        academicBar: isTop5
+          ? 'Top 6 Grade 12 Average: 97%+ with 98%+ in Advanced Functions, Calculus and required Sciences'
+          : isTop10
+          ? 'Top 6 Grade 12 Average: 95%+ with solid mathematical consistency'
+          : 'Top 6 Grade 12 Average: 92%+ with rigorous STEM/Humanities core',
+        testingBar: 'Waterloo Euclid Mathematics Contest (Top 25% Honor Roll) and Canadian Computing Competition (CCC Senior)',
+        supercurriculars: {
+          research: 'Applied engineering prototypes, open-source repositories with active users, or local lab inquiry',
+          competitions: 'Waterloo Euclid Distinction, Canadian Senior Mathematics Contest (CSMC), or regional hackathons',
+          internships: 'Tech startup software engineering internship or engineering fabrication fellowship',
+          certifications: 'CS50, Coursera Data Science, or SolidWorks CAD digital fabrication',
+          leadership: 'Robotics sub-team lead, hackathon organizer, or STEM community outreach',
+        },
+        executiveConclusion: 'Canadian flagships (Toronto, Waterloo, McGill) prioritize high numerical grades combined with demonstrable applied engineering and co-op builder capability.',
+      };
+    }
+
+    if (isSingapore) {
+      return {
+        countryAdmissionModel: 'Singapore Admissions Standard (Percentile & Olympiad Meritocracy)',
+        academicBar: 'Straight As in Singapore-Cambridge GCE A-Levels (90 Rank Points) with H3 distinction or IB 44+',
+        testingBar: 'Singapore Math Olympiad (SMO Open Gold), National Olympiads (SJPO/SChO), and University Aptitude assessments',
+        supercurriculars: {
+          research: 'A*STAR research attachment, university laboratory apprenticeship, or published science fair monograph',
+          competitions: 'Singapore Math Olympiad (SMO), Singapore Physics Olympiad (SPhO), or National Science Talent Search',
+          internships: 'Agency for Science, Technology and Research (A*STAR) or hospital junior research attachment',
+          certifications: 'Advanced algorithms, multivariable mathematics, or university pre-matriculation modules',
+          leadership: 'Student council executive, uniformed groups pinnacle badge, or national youth leadership',
+        },
+        executiveConclusion: 'Singapore universities (NUS, NTU) operate on strict meritocratic cutoffs and Olympiad percentiles; near-perfect academic percentiles are essential.',
+      };
+    }
+
+    if (isSwitzerland) {
+      return {
+        countryAdmissionModel: 'Switzerland & Europe Admissions Standard (Formal Examination Rigor)',
+        academicBar: 'Swiss Federal Matura or equivalent European examination with grade 5.8+ / 6.0 in Mathematics and Physics',
+        testingBar: 'ETH Zurich / EPFL Comprehensive Entrance Examinations and European Physics/Math Olympiad medals',
+        supercurriculars: {
+          research: 'Computational physics/astrophysics simulation or university mathematics institute paper',
+          competitions: 'Swiss Olympiad in Informatics, European Physics Olympiad, or Swiss Mathematical Olympiad',
+          internships: 'ETH/EPFL research lab assistant or CERN visitor program apprenticeship',
+          certifications: 'Advanced linear algebra, multivariable calculus, and LaTeX scientific typesetting',
+          leadership: 'Academic problem seminar founder or math enrichment circle lead',
+        },
+        executiveConclusion: 'European pinnacles (ETH Zurich, EPFL) test pure theoretical and mathematical endurance under formal examination conditions.',
+      };
+    }
+
+    if (isAustralia) {
+      return {
+        countryAdmissionModel: 'Australia Admissions Standard (Direct ATAR Rank Entry)',
+        academicBar: 'ATAR 99.00+ (or IB 42+) direct entry cutoff for flagship engineering, law, and medical programs',
+        testingBar: 'Prerequisite subject cutoffs and UCAT ANZ (90th+ percentile for medicine)',
+        supercurriculars: {
+          research: 'Independent university inquiry, extended investigation, or premier science fair submission',
+          competitions: 'Australian Mathematics Competition (AMC) High Distinction or Australian Science Olympiads',
+          internships: 'Hospital volunteering (50+ hours) or university engineering faculty shadowing',
+          certifications: 'University micro-credentials or mathematics extension certificates',
+          leadership: 'School prefect, house captain, or community service initiative leader',
+        },
+        executiveConclusion: 'Australian universities prioritize direct rank criteria (ATAR percentiles) alongside prerequisite subject mastery.',
+      };
+    }
+
+    // Default: United States & All Global (Holistic & Angular Review)
     return {
+      countryAdmissionModel: isUS
+        ? 'United States Admissions Standard (Holistic & Angular Review)'
+        : 'Global Selective Admissions Standard',
       academicBar: isTop5
         ? 'Unweighted GPA 3.96+ (Top 1% Class Rank) with 7–9 advanced AP / IB Higher Level courses scored 5s/7s'
         : isTop10
@@ -294,7 +542,7 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
         ? `Top 25 universities look for strong academic consistency, deep involvement in 2–3 meaningful activities in ${target.targetField}, and clear evidence of intellectual vitality and institutional contribution.`
         : 'Focus on maintaining strong GPA trajectory, completing advanced coursework, and anchoring the profile with 1–2 structured projects or regional achievements.',
     };
-  }, [target.targetRankTier, target.targetField]);
+  }, [target.targetRankTier, target.targetCountry, target.targetField]);
 
   // Benchmark student representing the required target curve on the radar
   const benchmarkStudent: StudentProfile = {
@@ -318,12 +566,55 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
     notes: '',
   };
 
-  const handlePrint = () => {
-    window.print();
+  const [downloadFeedback, setDownloadFeedback] = useState<string | null>(null);
+
+  const handlePrintDossier = () => {
+    setReportDrawerTab('preview');
+    setIsReportDrawerOpen(true);
+    triggerDossierPrint();
+  };
+
+  const handlePrintGapAnalysis = () => {
+    setReportDrawerTab('gap_analysis');
+    setIsReportDrawerOpen(true);
+    triggerDossierPrint();
+  };
+
+  const handleDownloadFullReport = () => {
+    const detected = detectProfileCompletedActivities(target, baseline);
+    const html = generatePrintableDossierHTML({
+      target,
+      baseline,
+      pathData,
+      detectedActivities: detected,
+      requiredProfile,
+      isGapAnalysisOnly: false,
+    });
+    const filename = `${target.studentName.replace(/\s+/g, '_')}_Admissions_Diagnostic_Dossier.html`;
+    downloadDossierHTML(filename, html);
+    setDownloadFeedback(`Downloaded standalone report "${filename}"!`);
+    setTimeout(() => setDownloadFeedback(null), 4000);
   };
 
   return (
     <div className="space-y-8 pb-16 print:space-y-4">
+      {/* Download / Print Feedback Toast */}
+      {downloadFeedback && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold flex items-center justify-between shadow-xs print:hidden animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{downloadFeedback}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDownloadFeedback(null)}
+            className="text-emerald-700 hover:text-emerald-900 cursor-pointer font-bold text-sm"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Editorial Research Header */}
       <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/90 shadow-2xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-stone-200">
@@ -342,14 +633,36 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 print:hidden">
+          <div className="flex items-center gap-2.5 shrink-0 print:hidden flex-wrap">
             <button
               type="button"
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg bg-stone-900 text-stone-100 hover:bg-stone-800 transition-colors cursor-pointer border border-stone-900 shadow-2xs"
+              onClick={() => {
+                setReportDrawerTab('preview');
+                setIsReportDrawerOpen(true);
+              }}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all cursor-pointer border border-indigo-700"
+              title="Open interactive on-screen dossier and copyable markdown report"
             >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Print Complete Dossier</span>
+              <FileText className="w-3.5 h-3.5" />
+              <span>Prepare Aspirant Report</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadFullReport}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 transition-colors cursor-pointer border border-amber-600 shadow-2xs"
+              title="Download standalone print-ready HTML report with all charts and sections (Admissions Philosophy module omitted)"
+            >
+              <Download className="w-3.5 h-3.5 text-stone-950" />
+              <span>Download Report (HTML)</span>
+            </button>
+            <button
+              type="button"
+              onClick={handlePrintDossier}
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg bg-stone-900 text-stone-100 hover:bg-stone-800 transition-colors cursor-pointer border border-stone-900 shadow-2xs"
+              title="Print full admissions dossier report"
+            >
+              <Printer className="w-3.5 h-3.5 text-amber-400" />
+              <span>Print Dossier</span>
             </button>
           </div>
         </div>
@@ -647,6 +960,7 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
         targetCountry={target.targetCountry}
         targetUniversity={target.targetUniversity}
         targetRankTier={target.targetRankTier}
+        targetField={target.targetField}
         onSelectUniversity={(uniName) => {
           setTarget((prev) => ({
             ...prev,
@@ -655,48 +969,86 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
         }}
       />
 
-      {/* SECTION 3: SPIDER & RADAR CHART COMPETENCY COMPARISON */}
+      {/* SECTION 3: 2-LINE TRAJECTORY JOURNEY CHART WITH BLINKING BEACON (KEPT OVER AND ABOVE SPIDER CHART) */}
+      <TrajectoryTwoLineChart
+        currentGrade={target.currentGrade}
+        studentName={target.studentName}
+        targetRankTier={target.targetRankTier}
+        targetCountry={target.targetCountry}
+        targetUniversity={target.targetUniversity}
+        targetField={target.targetField}
+        baselineReadiness={pathData.readinessScore}
+        projectedReadiness={pathData.projectedReadinessScore}
+        cohortBenchmarkComposite={pathData.cohortBenchmarks.compositeScore}
+        cohortBenchmarks={pathData.cohortBenchmarks}
+      />
+
+      {/* SECTION 4: SPIDER & RADAR CHART COMPETENCY COMPARISON */}
       <div className="bg-white rounded-2xl p-6 sm:p-8 border border-stone-200/90 shadow-2xs space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-stone-200">
           <div>
-            <div className="text-xs font-mono text-stone-500 uppercase tracking-wider mb-1">
-              Diagnostic Overlay
+            <div className="flex items-center gap-2 text-xs font-mono text-stone-500 uppercase tracking-wider mb-1 flex-wrap">
+              <span>Diagnostic Overlay</span>
+              <span>·</span>
+              <span className="font-semibold text-stone-900 bg-amber-50 text-amber-900 border border-amber-200 px-2 py-0.5 rounded">
+                {target.targetCountry} Admissions Logic
+              </span>
+              <span>·</span>
+              <span className="font-semibold text-stone-800 bg-stone-100 border border-stone-300 px-2 py-0.5 rounded">
+                {target.targetRankTier} Standard
+              </span>
             </div>
             <h3 className="text-xl font-serif font-bold text-stone-900">
               Spider & Radar Competency Comparison
             </h3>
             <p className="text-xs text-stone-600 mt-0.5">
-              Overlay of {target.studentName}'s current profile against the {target.targetRankTier} empirical standard.
+              Exact dimensional comparison between {target.studentName}'s current profile and the {target.targetCountry} {target.targetRankTier} benchmark.
             </p>
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-4 text-xs font-mono text-stone-700 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-stone-900" />
-              <span>{target.studentName}</span>
+          {/* Legend with Strict Total Points */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 text-xs font-mono text-stone-700 shrink-0">
+            <div className="flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-lg border border-stone-200">
+              <span className="w-2.5 h-2.5 rounded-full bg-stone-900 shrink-0" />
+              <span>
+                <strong>{target.studentName}:</strong> {pathData.aspirantScores.compositeScore} pts avg
+                <span className="text-stone-400 ml-1">({pathData.aspirantScores.totalPoints || 0} pts sum)</span>
+              </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-              <span>{target.targetRankTier} Standard</span>
+            <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-900">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
+              <span>
+                <strong>{target.targetRankTier} Standard:</strong> {pathData.cohortBenchmarks.compositeScore} pts avg
+                <span className="text-emerald-700 ml-1">({pathData.cohortBenchmarks.totalPoints || 0} pts sum)</span>
+              </span>
             </div>
+            <button
+              type="button"
+              onClick={handlePrintGapAnalysis}
+              className="print:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 bg-white hover:bg-stone-100 text-stone-800 text-xs font-semibold cursor-pointer shadow-2xs transition-colors"
+              title="Print Gap Analysis & Radar Breakdown"
+            >
+              <Printer className="w-3.5 h-3.5 text-stone-700" />
+              <span>Print Gap Analysis</span>
+            </button>
           </div>
         </div>
 
         {/* Chart + Dimensional Table */}
         <div className="flex flex-col lg:flex-row items-center justify-between gap-8 py-2">
-          {/* Spider Canvas */}
+          {/* Spider Canvas with custom dynamic evaluations */}
           <div className="w-full lg:w-1/2 flex items-center justify-center">
             <SpiderChart
-              students={[studentForRadar, benchmarkStudent]}
+              customEvaluations={radarCustomEvaluations}
               size={360}
             />
           </div>
 
           {/* 6 Aspects Dimensional Breakdown Table */}
           <div className="w-full lg:w-1/2 space-y-2.5">
-            <div className="text-xs font-mono text-stone-500 uppercase tracking-wider mb-1">
-              Competency Dimensional Score Gaps:
+            <div className="flex items-center justify-between text-xs font-mono text-stone-500 uppercase tracking-wider mb-1">
+              <span>Competency Dimensional Score Gaps</span>
+              <span>{target.targetCountry}</span>
             </div>
 
             <div className="space-y-2">
@@ -754,7 +1106,7 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
                       <div className="flex items-center gap-1.5 font-mono text-xs">
                         <span className="font-semibold text-stone-900">{dim.current}</span>
                         <span className="text-stone-400">/</span>
-                        <span className="text-stone-600">{dim.target}</span>
+                        <span className="text-stone-600 font-semibold">{dim.target}</span>
                       </div>
                       <div
                         className={`text-[10px] font-mono font-medium ${
@@ -767,37 +1119,83 @@ export const BackEngineeredRoadmapView: React.FC<BackEngineeredRoadmapViewProps>
                   </div>
                 );
               })}
+
+              {/* Total Aggregate Harmonization Row */}
+              <div className="p-3.5 rounded-xl bg-stone-900 text-stone-100 text-xs flex items-center justify-between gap-3 shadow-2xs">
+                <div>
+                  <div className="font-bold flex items-center gap-2">
+                    <span>Harmonized Total Benchmark Points</span>
+                    <span className="text-[10px] bg-stone-800 text-stone-300 px-2 py-0.5 rounded font-mono">
+                      Sum of 6 Dimensions
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-stone-400">
+                    Candidate Sum: {pathData.aspirantScores.totalPoints} pts vs Benchmark: {pathData.cohortBenchmarks.totalPoints} pts
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <div className="flex items-center gap-1.5 font-mono text-xs">
+                    <span className="text-stone-300">{pathData.aspirantScores.compositeScore}</span>
+                    <span className="text-stone-500">/</span>
+                    <span className="font-bold text-emerald-400">{pathData.cohortBenchmarks.compositeScore} pts</span>
+                  </div>
+                  <div className="text-[10px] font-mono text-stone-400">
+                    Trajectory Line Target
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Dynamic Country Philosophy & Trajectory Harmonization Callout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-stone-200 text-xs">
+          <div className="p-3.5 rounded-lg bg-stone-50 border border-stone-200">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-stone-500 mb-1">
+              Country Philosophy Calibration ({target.targetCountry})
+            </div>
+            <p className="text-stone-700 leading-relaxed font-medium">
+              {pathData.cohortBenchmarks.countryPhilosophy || 'Empirically calibrated admission standards reflecting target nation evaluation rubrics.'}
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-lg bg-emerald-50/60 border border-emerald-200">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-800 mb-1">
+              Strict Point Harmonization Notice
+            </div>
+            <p className="text-stone-700 leading-relaxed">
+              The Admissions Readiness 2-Line Trajectory culmination benchmark ({pathData.cohortBenchmarks.compositeScore} pts) directly equals the normalized aggregate of the 6 spider chart dimensions ({pathData.cohortBenchmarks.totalPoints} total dimensional pts ÷ 6 = {pathData.cohortBenchmarks.compositeScore} pts).
+            </p>
           </div>
         </div>
       </div>
 
-      {/* SECTION 4: 2-LINE TRAJECTORY JOURNEY CHART WITH BLINKING BEACON */}
-      <TrajectoryTwoLineChart
-        currentGrade={target.currentGrade}
-        studentName={target.studentName}
-        targetRankTier={target.targetRankTier}
-        targetUniversity={target.targetUniversity}
-        targetField={target.targetField}
-        baselineReadiness={pathData.readinessScore}
-        projectedReadiness={pathData.projectedReadinessScore}
-      />
-
-      {/* SECTION 5: ADMITTED STUDENT LOOK-ALIKES & EMPIRICAL BLUEPRINTS */}
-      <LookalikeAdmittedStudents
-        cohort={cohort1500}
-        target={target}
-        baseline={baseline}
-        onInspectStudent={onInspectStudent}
-      />
-
-      {/* SECTION 6: DETAILED SUPERCURRICULAR MILESTONES ACTION PLAN */}
+      {/* SECTION 5: DETAILED SUPERCURRICULAR MILESTONES ACTION PLAN */}
       <SupercurricularMilestonesView
         currentGrade={target.currentGrade}
         targetRankTier={target.targetRankTier}
         targetUniversity={target.targetUniversity}
         targetCountry={target.targetCountry}
         targetField={target.targetField}
+        baseline={baseline}
+        studentName={target.studentName}
+        onMilestonesChange={(total, completed) => {
+          setMilestonesMeta({ total, completed });
+        }}
+      />
+
+      {/* SECTION 6: INTERACTIVE ASPIRANT STRATEGY REPORT DRAWER */}
+      <AspirantReportDrawer
+        isOpen={isReportDrawerOpen}
+        onClose={() => setIsReportDrawerOpen(false)}
+        target={target}
+        baseline={baseline}
+        pathData={pathData}
+        totalMilestonesCount={milestonesMeta.total}
+        completedMilestonesCount={milestonesMeta.completed}
+        requiredProfile={requiredProfile}
+        initialTab={reportDrawerTab}
       />
     </div>
   );

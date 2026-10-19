@@ -693,33 +693,168 @@ export const UNIVERSITY_VISIONS: Record<string, UniversityVisionInfo> = {
         'Keep motivation statements strictly formal, concise, and focused on specific departmental research groups and laboratory facilities.',
     },
   },
+  'university of melbourne': {
+    universityName: 'University of Melbourne & Australian National University',
+    shortName: 'Melbourne & ANU',
+    country: 'Australia',
+    rank: 13,
+    badge: 'QS Global #13 • Group of Eight (Go8) Flagship',
+    motto: 'Postera crescam laude',
+    mottoTranslation: 'We shall grow in the esteem of future generations',
+    visionStatement:
+      'To discover and share knowledge that transforms individuals and societies, championing intellectual rigor, public benefit, and global engagement.',
+    coreSelectionPhilosophy:
+      'Australian Go8 flagships prioritize direct academic rank mastery (ATAR percentiles or IB Diploma scores) alongside prerequisite mathematics and science rigor. Comprehensive holistic portfolios and interviews are reserved for clinical medical and dental cohorts.',
+    whyGreatProfilesFailHere:
+      'Applicants with stellar extracurricular resumes and startup leadership get rejected if they fall even 0.2 points below the strict published ATAR / IB cutoffs (e.g. 99.00 ATAR for flagship Engineering / Biomedicine) or lack mandatory prerequisites in Higher Level Mathematics or Chemistry.',
+    whatAdmissionsLooksFor: [
+      {
+        pillar: 'Direct ATAR / IB Score Rank Clearance',
+        description:
+          'Clearance of published guaranteed or competitive entry thresholds for the target undergraduate degree.',
+        evidenceNeeded:
+          'ATAR 98.00–99.85+ or IB Diploma 40–44/45 points directly verified from school examination authority transcripts.',
+        weighting: 'Critical Mandatory',
+      },
+      {
+        pillar: 'Prerequisite Subject Mastery',
+        description:
+          'Completion of essential prerequisite high school subjects (e.g., Mathematical Methods, Specialist Mathematics, Chemistry).',
+        evidenceNeeded:
+          'Study scores of 35+ / 50 in Victorian VCE prerequisites or 6+ in IB Higher Level core subjects.',
+        weighting: 'Critical Mandatory',
+      },
+      {
+        pillar: 'Clinical & Multidisciplinary Aptitude (Medical Tracks)',
+        description:
+          'High percentile performance on the UCAT ANZ examination combined with performance in Multiple Mini Interviews (MMI).',
+        evidenceNeeded:
+          'UCAT ANZ 90th+ percentile score and strong ethical problem solving in structured behavioral scenario interviews.',
+        weighting: 'Core Differentiator',
+      },
+      {
+        pillar: 'Undergraduate Research Intent & Honours Pathway',
+        description:
+          'Demonstrated scholarly endurance and readiness to participate in bachelor honours and laboratory research colloquia.',
+        evidenceNeeded:
+          'Independent research notebooks, Australian Mathematics Competition (AMC) High Distinction, or science Olympiad participation.',
+        weighting: 'Holistic Bonus',
+      },
+    ],
+    countrySystemGuide: {
+      systemName: 'Australian Direct ATAR Index & Prerequisite System',
+      evalFocus: 'Guaranteed Academic Score Cutoffs + Core Prerequisite Subjects',
+      commonRejectionTrap:
+        'Assuming compelling personal essays or athletic achievement can compensate for falling below the published ATAR score cutoff.',
+      winningStrategy:
+        'Focus completely on maximizing external exam grades to lock in your ATAR/IB score, and ensure all prerequisites are satisfied with high marks.',
+    },
+    multiCountryAdvice:
+      'When applying to Australia alongside the US/UK, your intense academic preparation for UK/US exams will easily help you clear Australian ATAR thresholds. Ensure your high school curriculum includes required prerequisite subjects.',
+    actionableVisionAlignment: {
+      researchTip:
+        'Highlight independent empirical investigations and scientific literature comprehension aligned with faculty research institutes.',
+      competitionsTip:
+        'Compete in the Australian Mathematics Competition (AMC) and Australian Science Olympiads for objective validation.',
+      projectsTip:
+        'Build structured subject portfolios and capstones that prove deep mathematical and scientific understanding.',
+      essayTip:
+        'Keep statements concise and focused on academic preparedness and degree specialization; avoid emotional or dramatic narrative arcs.',
+    },
+  },
 };
 
-export function getUniversityVisionData(universityName?: string, country?: string): UniversityVisionInfo {
+export function getUniversityVisionData(
+  universityName?: string,
+  country?: string,
+  tier?: string,
+  field?: string
+): UniversityVisionInfo {
   const norm = (universityName || '').toLowerCase().trim();
+  const countryNorm = (country || 'United States').toLowerCase().trim();
+  const f = (field || '').toLowerCase();
+  const isCSOrEng = f.includes('cs') || f.includes('computer') || f.includes('engineer') || f.includes('robot') || f.includes('tech');
+  const isPreMedOrLawOrEcon = f.includes('med') || f.includes('bio') || f.includes('law') || f.includes('econ') || f.includes('policy') || f.includes('humanit');
 
-  // Check specific matches
-  for (const [key, val] of Object.entries(UNIVERSITY_VISIONS)) {
-    if (norm.includes(key) || key.includes(norm) || norm.includes(val.shortName.toLowerCase())) {
-      return val;
+  // Country classification checks
+  const isUKTarget = countryNorm.includes('kingdom') || countryNorm.includes('uk') || countryNorm.includes('britain');
+  const isCanadaTarget = countryNorm.includes('canada');
+  const isSingaporeTarget = countryNorm.includes('singapore');
+  const isEuropeTarget = countryNorm.includes('switzerland') || countryNorm.includes('europe') || countryNorm.includes('germany') || countryNorm.includes('france');
+  const isAustraliaTarget = countryNorm.includes('australia');
+  const isUSTarget = countryNorm.includes('states') || countryNorm.includes('us');
+
+  // 1. If user selected a specific university, verify that it matches the target country context
+  if (norm) {
+    for (const [key, val] of Object.entries(UNIVERSITY_VISIONS)) {
+      const matchKey = norm.includes(key) || key.includes(norm) || norm.includes(val.shortName.toLowerCase());
+      if (matchKey) {
+        const uniCountry = val.country.toLowerCase();
+        // Check if university belongs to the currently active country target
+        const countryCompatible =
+          countryNorm === 'all global' ||
+          (isUKTarget && (uniCountry.includes('kingdom') || uniCountry.includes('uk'))) ||
+          (isUSTarget && (uniCountry.includes('states') || uniCountry.includes('us'))) ||
+          (isCanadaTarget && uniCountry.includes('canada')) ||
+          (isSingaporeTarget && uniCountry.includes('singapore')) ||
+          (isEuropeTarget && (uniCountry.includes('switzerland') || uniCountry.includes('europe'))) ||
+          (isAustraliaTarget && uniCountry.includes('australia'));
+
+        if (countryCompatible) {
+          return val;
+        }
+      }
     }
   }
 
-  // Country-based fallback
-  const countryNorm = (country || 'United States').toLowerCase();
+  // 2. Dynamic Country & Peer Institution Binding:
 
-  if (countryNorm.includes('kingdom') || countryNorm.includes('uk')) {
+  // UNITED KINGDOM: Supercurricular exploration, deep academic curiosity, subject mastery & UCAS focus
+  if (isUKTarget) {
+    if (isCSOrEng) {
+      return tier === 'Top 10'
+        ? UNIVERSITY_VISIONS['imperial college london']
+        : UNIVERSITY_VISIONS['university of cambridge'];
+    }
+    if (isPreMedOrLawOrEcon) {
+      return UNIVERSITY_VISIONS['university of oxford'];
+    }
     return UNIVERSITY_VISIONS['university of oxford'];
   }
-  if (countryNorm.includes('singapore')) {
-    return UNIVERSITY_VISIONS['national university of singapore'];
-  }
-  if (countryNorm.includes('canada')) {
+
+  // CANADA: Academic cutoffs (95%+), Waterloo CEMC contests & practical Co-op builders
+  if (isCanadaTarget) {
     return UNIVERSITY_VISIONS['university of toronto'];
   }
-  if (countryNorm.includes('switzerland') || countryNorm.includes('europe') || countryNorm.includes('germany')) {
+
+  // SINGAPORE: Meritocratic Indicative Grade Profile (IGP) cutoffs & A*STAR research
+  if (isSingaporeTarget) {
+    return UNIVERSITY_VISIONS['national university of singapore'];
+  }
+
+  // CONTINENTAL EUROPE: Entrance exams, theoretical proof notebooks & first-principles mathematics
+  if (isEuropeTarget) {
     return UNIVERSITY_VISIONS['eth zurich'];
   }
 
+  // AUSTRALIA / APAC: Direct ATAR rank index, core prerequisites & clinical exams
+  if (isAustraliaTarget) {
+    return UNIVERSITY_VISIONS['university of melbourne'];
+  }
+
+  // UNITED STATES & GLOBAL: Holistic evaluation, intellectual vitality, community impact & angular spikes
+  if (isCSOrEng && (tier === 'Top 5' || tier === 'Top 10')) {
+    // If student is targeting Top 5/10 tech, balance between MIT and Stanford based on discipline
+    if (f.includes('robot') || f.includes('hard') || f.includes('mech') || f.includes('ee')) {
+      return UNIVERSITY_VISIONS['massachusetts institute of technology'];
+    }
+    return UNIVERSITY_VISIONS['stanford university'];
+  }
+
+  if (isPreMedOrLawOrEcon) {
+    return UNIVERSITY_VISIONS['harvard university'];
+  }
+
+  // Default flagship peer institution for US holistic admissions
   return UNIVERSITY_VISIONS['stanford university'];
 }

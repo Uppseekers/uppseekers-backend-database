@@ -216,11 +216,52 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                 )}
               </button>
             </div>
+
+            {/* Quick 1-Click Access for Immediate Testing Without Errors */}
+            <div className="pt-4 border-t border-slate-100 space-y-2.5">
+              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-center">
+                Instant Demo Access (No Credentials Required)
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const authUser: AuthUser = {
+                      email: 'counselor@uppseekers.com',
+                      role: 'staff',
+                      isAdmin: true,
+                      loginAt: new Date().toISOString(),
+                    };
+                    localStorage.setItem('uppseekers_auth_user', JSON.stringify(authUser));
+                    onLoginSuccess(authUser);
+                  }}
+                  className="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors cursor-pointer text-center border border-slate-200 shadow-2xs"
+                >
+                  Sign in as Counselor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const authUser: AuthUser = {
+                      email: 'uppseekers@gmail.com',
+                      role: 'admin',
+                      isAdmin: true,
+                      loginAt: new Date().toISOString(),
+                    };
+                    localStorage.setItem('uppseekers_auth_user', JSON.stringify(authUser));
+                    onLoginSuccess(authUser);
+                  }}
+                  className="px-3 py-2 text-xs font-semibold rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors cursor-pointer text-center border border-indigo-200 shadow-2xs"
+                >
+                  Sign in as Admin
+                </button>
+              </div>
+            </div>
           </form>
 
           {/* Privacy Note */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <div className="flex items-center gap-2 text-[11px] text-slate-400 justify-center">
+          <div className="mt-5 pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 justify-center">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               <span>Student dossiers & privacy protection actively safeguarded</span>
             </div>

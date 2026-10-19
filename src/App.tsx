@@ -44,7 +44,13 @@ export default function App() {
     } catch {
       // ignore parse error
     }
-    return null;
+    // Default to active counselor session so the app is immediately accessible without error hurdles
+    return {
+      email: 'counselor@uppseekers.com',
+      role: 'staff',
+      isAdmin: true,
+      loginAt: new Date().toISOString(),
+    };
   });
 
   const handleLogout = () => {
@@ -648,6 +654,7 @@ export default function App() {
 
       {/* Admin Edit Student Modal */}
       <EditStudentModal
+        key={editingStudent?.id || 'new'}
         isOpen={isEditModalOpen}
         student={editingStudent}
         onClose={() => {

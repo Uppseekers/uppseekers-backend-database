@@ -4,8 +4,22 @@ import { evaluateStudent, StudentEvaluation } from '../utils/studentEvaluation';
 import { BlurredName } from './BlurredName';
 import { Info } from 'lucide-react';
 
+export interface CustomSpiderEvaluation {
+  studentId: string;
+  studentName: string;
+  compositeScore: number;
+  totalPoints?: number;
+  dimensions: {
+    key: string;
+    label: string;
+    score: number;
+    evidence: string;
+  }[];
+}
+
 interface SpiderChartProps {
-  students: StudentProfile[];
+  students?: StudentProfile[];
+  customEvaluations?: CustomSpiderEvaluation[];
   height?: number;
   size?: number;
   highlightedStudentId?: string | null;
@@ -47,7 +61,8 @@ export const STUDENT_COLORS = [
 ];
 
 export const SpiderChart: React.FC<SpiderChartProps> = ({
-  students,
+  students = [],
+  customEvaluations,
   size: customSize,
   highlightedStudentId,
   onHoverStudent,
@@ -104,7 +119,8 @@ export const SpiderChart: React.FC<SpiderChartProps> = ({
     }, 180);
   };
 
-  if (students.length === 0) {
+  const hasData = (customEvaluations && customEvaluations.length > 0) || students.length > 0;
+  if (!hasData) {
     return (
       <div className="flex items-center justify-center p-8 bg-slate-50 rounded-2xl border border-slate-200 text-xs text-slate-500">
         No students selected for radar evaluation.
@@ -112,13 +128,59 @@ export const SpiderChart: React.FC<SpiderChartProps> = ({
     );
   }
 
-  // Pre-calculate evaluations for all provided students
+  // Pre-calculate evaluations for all provided students or custom evaluations
   const evaluations: { student: StudentProfile; eval: StudentEvaluation; colorIdx: number }[] =
-    students.map((s, idx) => ({
-      student: s,
-      eval: evaluateStudent(s),
-      colorIdx: idx % STUDENT_COLORS.length,
-    }));
+    customEvaluations && customEvaluations.length > 0
+      ? customEvaluations.map((ce, idx) => ({
+          student: {
+            id: ce.studentId,
+            name: ce.studentName,
+            university: '',
+            course: '',
+            classOf: '',
+            linkedin: '',
+            academicsPerformance: '',
+            apTaken: '',
+            actSat: '',
+            languageTest: '',
+            internshipWork: '',
+            research: '',
+            summerPrograms: '',
+            certificatesMoocs: '',
+            competitionsAwards: '',
+            projects: '',
+            otherActivities: '',
+            notes: '',
+          },
+          eval: {
+            studentId: ce.studentId,
+            studentName: ce.studentName,
+            compositeScore: ce.compositeScore,
+            evaluationTier: 'Tier 1 Elite',
+            primarySpike: '',
+            secondarySpike: '',
+            dimensions: ce.dimensions.map((d) => ({
+              key: d.key as any,
+              label: d.label,
+              shortLabel: d.label,
+              score: d.score,
+              tierLabel: '',
+              evidence: d.evidence,
+            })),
+            radarData: ce.dimensions.map((d) => ({
+              axis: d.label,
+              shortAxis: d.label,
+              value: d.score,
+              description: d.evidence,
+            })),
+          },
+          colorIdx: idx % STUDENT_COLORS.length,
+        }))
+      : students.map((s, idx) => ({
+          student: s,
+          eval: evaluateStudent(s),
+          colorIdx: idx % STUDENT_COLORS.length,
+        }));
 
   const dimensions = evaluations[0]?.eval.dimensions || [];
   const totalAxes = dimensions.length;

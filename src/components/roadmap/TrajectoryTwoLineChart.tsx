@@ -26,20 +26,33 @@ interface TrajectoryTwoLineChartProps {
   currentGrade: GradeLevel;
   studentName: string;
   targetRankTier: RankTier;
+  targetCountry: string;
   targetUniversity?: string;
   targetField?: string;
   baselineReadiness: number;
   projectedReadiness: number;
+  cohortBenchmarkComposite: number;
+  cohortBenchmarks?: {
+    problemSolving: number;
+    technicalSkills: number;
+    criticalThinking: number;
+    teamWork: number;
+    communication: number;
+    creativity: number;
+  };
 }
 
 export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
   currentGrade,
   studentName,
   targetRankTier,
+  targetCountry,
   targetUniversity,
   targetField = 'Computer Science & AI',
   baselineReadiness,
   projectedReadiness,
+  cohortBenchmarkComposite,
+  cohortBenchmarks,
 }) => {
   const [hoveredPoint, setHoveredPoint] = useState<TrajectoryPoint | null>(null);
   const [selectedPoint, setSelectedPoint] = useState<TrajectoryPoint | null>(null);
@@ -55,15 +68,8 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
       ? 5
       : 6;
 
-  // Scale scores based on target tier
-  const tierTargetMultiplier =
-    targetRankTier === 'Top 5'
-      ? 1.0
-      : targetRankTier === 'Top 10'
-      ? 0.95
-      : targetRankTier === 'Top 25'
-      ? 0.9
-      : 0.85;
+  // Strict Point Harmonization: Intermediate semester fractions ramping up to exactly 1.0 (100% of benchmark composite) at G12 Spring
+  const semesterRampFractions = [0.44, 0.51, 0.62, 0.72, 0.83, 0.91, 0.96, 1.0];
 
   // Generate field-specific trajectory milestones
   const getFieldSpecificMilestones = (field: string) => {
@@ -443,8 +449,10 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
   const rawMilestones = getFieldSpecificMilestones(targetField);
 
   // Synthesize points with student's current baseline & projected curve
+  // Strict Point Harmonization: Culmination benchmark (idx=7) strictly equals cohortBenchmarkComposite
   const points: TrajectoryPoint[] = rawMilestones.map((m, idx) => {
-    const averageScore = Math.round(m.avg * tierTargetMultiplier);
+    const fraction = semesterRampFractions[idx] ?? 1.0;
+    const averageScore = Math.round(cohortBenchmarkComposite * fraction);
     const isProjected = idx > currentGradeIndex;
     let aspirantScore = 0;
 
@@ -544,18 +552,24 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
       {/* Header & Legend */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-stone-200">
         <div>
-          <div className="flex items-center gap-2 text-xs font-mono text-stone-500 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-xs font-mono text-stone-500 uppercase tracking-wider mb-1 flex-wrap">
             <span>Trajectory Pathfinder</span>
             <span>·</span>
-            <span className="text-stone-800 font-semibold">{targetField}</span>
+            <span className="font-semibold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+              {targetCountry}
+            </span>
             <span>·</span>
-            <span>Grade 9 Fall → Grade 12 Spring Benchmark</span>
+            <span className="font-semibold text-stone-900 bg-stone-100 px-2 py-0.5 rounded border border-stone-300">
+              {targetRankTier} Benchmark ({cohortBenchmarkComposite} pts)
+            </span>
+            <span>·</span>
+            <span className="text-stone-800 font-semibold">{targetField}</span>
           </div>
           <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 tracking-tight">
             Admissions Readiness 2-Line Trajectory Chart
           </h3>
-          <p className="text-xs sm:text-sm text-stone-600 mt-1">
-            Empirical journey of {targetRankTier} ({targetField}) admitted candidates vs. <strong className="text-stone-900">{studentName}</strong>'s current standing and tentative back-engineered path. Hover or click any milestone point below to inspect benchmark criteria.
+          <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-3xl leading-relaxed">
+            Empirical journey of {targetRankTier} ({targetField}) admitted candidates in <strong className="text-stone-900 font-semibold">{targetCountry}</strong> vs. <strong className="text-stone-900">{studentName}</strong>'s current standing and projected path. The final benchmark culmination (<strong className="text-stone-900 font-mono font-semibold">{cohortBenchmarkComposite} pts</strong>) is strictly harmonized with the exact 6-dimensional aggregate from the Spider & Radar breakdown.
           </p>
         </div>
 
@@ -563,7 +577,7 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
         <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-stone-600 shrink-0">
           <div className="flex items-center gap-1.5">
             <span className="w-3.5 h-1 bg-emerald-600 rounded-full inline-block" />
-            <span>Average Admitted Path</span>
+            <span>Admitted Benchmark ({cohortBenchmarkComposite} pts target)</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -578,26 +592,41 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
         </div>
       </div>
 
-      {/* Trajectory Gap Highlight Memo (Direct Bullet Points) */}
-      <div className="p-4 sm:p-5 rounded-xl bg-stone-50/70 border border-stone-200 space-y-2 text-xs">
-        <div className="text-[11px] font-mono text-stone-500 uppercase tracking-wider">
-          Diagnostic Milestone Assessment at {currentPoint.semester} ({currentGrade}):
+      {/* Trajectory Gap Highlight Memo (Direct Bullet Points & Strict Harmonization) */}
+      <div className="p-4 sm:p-5 rounded-xl bg-stone-50/70 border border-stone-200 space-y-2.5 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-stone-200">
+          <div className="text-[11px] font-mono text-stone-500 uppercase tracking-wider">
+            Diagnostic Milestone Assessment at {currentPoint.semester} ({currentGrade}) · {targetCountry} {targetRankTier}:
+          </div>
+          <div className="text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">
+            Strict Harmonization: Culmination Benchmark = {cohortBenchmarkComposite} pts
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
           <div>
             <span className="text-stone-500 block text-[11px]">• Current Score</span>
             <span className="font-mono font-semibold text-stone-900 text-sm">
               {currentPoint.aspirantScore} pts
             </span>
+            <span className="text-[10px] text-stone-500 block">Baseline readiness</span>
           </div>
           <div>
-            <span className="text-stone-500 block text-[11px]">• {targetRankTier} Benchmark</span>
+            <span className="text-stone-500 block text-[11px]">• Milestone Benchmark</span>
             <span className="font-mono font-semibold text-stone-900 text-sm">
               {currentPoint.averageScore} pts
             </span>
+            <span className="text-[10px] text-stone-500 block">At {currentPoint.semester}</span>
           </div>
           <div>
-            <span className="text-stone-500 block text-[11px]">• Gap Verdict</span>
+            <span className="text-stone-500 block text-[11px]">• Target Culmination</span>
+            <span className="font-mono font-semibold text-stone-900 text-sm">
+              {cohortBenchmarkComposite} pts
+            </span>
+            <span className="text-[10px] text-stone-500 block">6-dimension radar total</span>
+          </div>
+          <div>
+            <span className="text-stone-500 block text-[11px]">• Current Stage Gap</span>
             <span
               className={`font-mono font-semibold text-sm ${
                 currentGap > 0 ? 'text-amber-800' : 'text-emerald-700'
@@ -605,8 +634,19 @@ export const TrajectoryTwoLineChart: React.FC<TrajectoryTwoLineChartProps> = ({
             >
               {currentGap > 0 ? `-${currentGap} pts deficit` : `+${Math.abs(currentGap)} pts ahead`}
             </span>
+            <span className="text-[10px] text-stone-500 block">
+              {cohortBenchmarkComposite - currentPoint.aspirantScore > 0 ? `(-${cohortBenchmarkComposite - currentPoint.aspirantScore} pts to final)` : 'Target Met'}
+            </span>
           </div>
         </div>
+
+        {cohortBenchmarks && (
+          <div className="pt-2 border-t border-stone-200 text-[11px] text-stone-600 font-mono flex items-center gap-1.5 flex-wrap">
+            <span className="font-bold text-stone-800">• 6-Dimension Breakdown:</span>
+            <span>Problem Solving ({cohortBenchmarks.problemSolving}) + Technical ({cohortBenchmarks.technicalSkills}) + Critical ({cohortBenchmarks.criticalThinking}) + Team ({cohortBenchmarks.teamWork}) + Comm ({cohortBenchmarks.communication}) + Creativity ({cohortBenchmarks.creativity}) ÷ 6 = <strong className="text-stone-900 font-bold">{cohortBenchmarkComposite} pts</strong></span>
+          </div>
+        )}
+
         <div className="pt-2 border-t border-stone-200 text-[11px] text-stone-600">
           <strong className="text-stone-800">• Actionable Objective: </strong>
           {currentPoint.suggestedAction}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StudentProfile } from '../types';
 import {
   X,
@@ -15,6 +15,7 @@ import {
   FolderGit2,
   Linkedin,
   FileText,
+  RotateCcw,
 } from 'lucide-react';
 
 interface EditStudentModalProps {
@@ -37,8 +38,29 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
   const [formData, setFormData] = useState<StudentProfile>({ ...student });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Synchronize state whenever a new student record is selected or modal opens
+  useEffect(() => {
+    if (student) {
+      setFormData({ ...student });
+    }
+  }, [student]);
+
   const handleChange = (field: keyof StudentProfile, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleClearActivities = () => {
+    setFormData((prev) => ({
+      ...prev,
+      internshipWork: '',
+      research: '',
+      summerPrograms: '',
+      certificatesMoocs: '',
+      competitionsAwards: '',
+      projects: '',
+      otherActivities: '',
+      notes: '',
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -289,6 +311,15 @@ export const EditStudentModal: React.FC<EditStudentModalProps> = ({
             ) : <div />}
 
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleClearActivities}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                title="Clear all activity and extracurricular fields"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>Clear Activities</span>
+              </button>
               <button
                 type="button"
                 onClick={onClose}

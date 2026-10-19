@@ -1,113 +1,120 @@
-# Institutional Whitepaper & Data Room Redesign
+# Harmonizing Admissions Readiness Trajectory & Spider/Radar Competency Diagnostics
 
-Transform the application into a clean, understated institutional research whitepaper with quiet authority, eliminating marketing buzz, noisy candy badges, and saturated gradients. Re-architect the platform around University Tier tabs (Top 5, Top 10, Top 25, Top 50, Top 100), replace all references to 1,500 with "thousands of students", and present high-yield admissions conclusions through direct, bullet-point facts and executive takeaways.
+Synchronize the Admissions Readiness 2-Line Trajectory Chart with the Spider & Radar Competency Comparison by unifying their mathematical foundation, passing direct 6-dimensional scores into the radar canvas, and dynamically scaling trajectory benchmarks across country systems and university tier standards.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following user design choices confirmed in Phase 1 govern this implementation:
+> The architectural and algorithmic decisions below were clarified and confirmed to guarantee 100% mathematical and visual alignment between the Trajectory Chart and the Spider/Radar Comparison.
 
-- **Confirmed Visual Aesthetic**: Clean institutional research whitepaper with understated typography, archival neutral tones (crisp paper, stone/charcoal text, delicate hairline rules), zero candy badges, zero pill clutter, and quiet analytical density.
-- **Confirmed University Navigation Architecture**: Tier-based tab groupings (Top 5, Top 10, Top 25, Top 50, Top 100). The benchmark and requirements are anchored directly per tier, with institutions grouped clearly under each tier tab rather than repeated redundant pickers.
-- **Confirmed Analytical Tone**: Direct bullet-point facts and concise executive takeaways, replacing promotional phrasing with diagnostic verdicts.
-- **Copy Alignment**: Replace all occurrences of "1,500" with "thousands of students" (e.g. "Calibrated against records from thousands of admitted students").
+- **Confirmed Decision 1: Trajectory Baseline Readiness Calculation**:
+  Calculate the candidate's baseline trajectory score as the **country-weighted composite score** across the 6 competency dimensions (Problem Solving, Technical Skills, Critical Thinking, Team Work, Communication, and Creativity), weighted by the destination country's empirical admissions pillars.
+- **Confirmed Decision 2: Spider & Radar Direct Data Injection**:
+  Pass exact, dynamically calculated 6-dimensional scores (candidate achieved points and benchmark requirements) directly into the radar canvas, bypassing heuristic text re-evaluations to ensure the radar coordinates, dimensional gap table, and trajectory baseline numbers match down to the exact point.
+- **Confirmed Decision 3: Tier & Country Dynamic Trajectory Benchmarks**:
+  Dynamically scale the 2-Line Trajectory benchmark curve using country-specific admissions pace (e.g. earlier technical specialization in the UK/Singapore vs holistic crescendo in the US/Canada) combined with the University Tier Standard (Top 5, Top 10, Top 25, Top 50, Top 100).
 
 ---
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Provides an admissions data room and reverse-engineering pathfinder that models the actual admissions criteria, gap trajectory, and supercurricular requirements across global university tiers.
-- **Target Audience / Persona**: High school students, academic counselors, and parents targeting top global universities who need unvarnished, accurate admissions diagnostics rather than marketing hype.
-- **Key Value**: Delivers instant diagnostic clarity—showing the exact academic, testing, and supercurricular thresholds required by university tiers, calculating empirical profile gaps on a 6-aspect radar, and outlining phase-by-phase action items without false promises.
+- **What It Does**: Unifies the diagnostic evaluation pipeline in the Candidate Gap Analyzer and Roadmap. When a user selects a destination country (e.g., Singapore, UK, US, Canada, Germany) or switches university tiers (e.g., Top 5 vs Top 100), the 6-Dimensional Competency values, the Spider & Radar polygon vertices, and the 2-Line Trajectory Chart update in lockstep with zero numerical discrepancies.
+- **Target Audience / Persona**: High school students, academic counselors, and parents planning multi-year admissions pathways across global university systems.
+- **Key Value**: Eliminates user confusion caused by diverging scores across different visual charts. An aspirant with an evaluated score of 72 points will see that exact rating reflected across the radar polygon, the competency table, and the starting coordinate of their multi-year trajectory line.
 
 ---
 
 ## 2. User Experience & Visual Design
 
-### Visual Identity & Theme (Institutional Research Whitepaper)
-- **Palette**:
-  - Background: Crisp archival paper (`bg-[#FCFBF9]` / `bg-stone-50`), whisper-gray panels (`bg-white` / `bg-stone-100/50`).
-  - Text: Deep charcoal ink (`text-stone-900` / `text-neutral-900`), muted scholarly captions (`text-stone-500` / `text-stone-600`).
-  - Hairlines & Borders: Subtle 1px neutral rules (`border-stone-200` / `border-neutral-300`).
-  - Accent: Muted archival slate and deep lapis ink (`text-slate-800`, `bg-slate-900`, `border-slate-800`), eliminating glowing purple/neon gradients.
-- **Typography & Cadence**:
-  - Headings: Editorial, clean serif/grotesque authority (`font-serif` or clean high-contrast grotesque) with restrained sizing.
-  - Body & Data: Clean, highly legible sans (`text-stone-700 leading-relaxed`) with tabular numerals for data metrics (`font-mono text-stone-900`).
-  - Zero-Pill Discipline: All category markers, statuses, counts, and grade tags rendered as clean unboxed text separated by typographic middots (`·`).
-- **Layout Rhythm**:
-  - Single-elevation paper sheets with generous whitespace margins.
-  - Section dividers as thin horizontal editorial rules (`border-t border-stone-200`).
-  - Direct executive bullet points with bold leading hooks (`• **Criterion**: Fact`).
+### Key User Flows
+1. **Country & Tier Standard Selection**: The user selects or changes their Target Country (e.g. Singapore) or University Tier (e.g. Top 10) in the Roadmap header or Country Gap Analyzer.
+2. **Unified Real-Time Recalibration**:
+   - The **Spider & Radar Competency Comparison** re-renders its candidate polygon and benchmark polygon using the exact 6-dimensional points calibrated for that country and tier.
+   - The adjacent **Competency Dimensional Score Gaps** table reflects those exact points with deficit/surplus indicators.
+   - The **Admissions Readiness 2-Line Trajectory Chart** updates its starting milestone (`baselineReadiness`), beacon pin, and multi-year benchmark trajectory line (`averageScore`) according to the selected country's weighting and tier expectations.
+3. **Milestone Completion Tracking**: When supercurricular blueprint items are completed or toggled, the point bonuses immediately flow into both the Radar polygon and the Trajectory starting line.
 
-### Navigation & Tier Flow
-- **Top-Level Navigation**:
-  - Clean typographic tab strip: `Student Profiles` · `Pathfinder & Gap Analysis` · `Admissions Playbook & Institutional Ethos` · `Admitted Cohort Data Room`.
-- **Tier-Based Switcher (The Core Anchor)**:
-  - Clean segmented control: `Top 5 Global` · `Top 10 Global` · `Top 25 Global` · `Top 50 Global` · `Top 100 Global`.
-  - Selecting a tier immediately displays:
-    1. **Tier Summary Memo**: Exact empirical grade threshold, testing target, and core selection focus in bullet form.
-    2. **Member Institutions**: Clean grid of top universities belonging to that tier (e.g., Top 5: MIT, Harvard, Stanford, Cambridge, Oxford) with quick-select options.
-    3. **Country Breakdown**: US, UK, Canada, Singapore, Europe differences within that tier.
-    4. **Calibrated Trajectory & Gap Radar**: Instantly aligned to that tier's empirical benchmark.
+### Visual Identity & Theme
+- **Aesthetic Direction**: Academic precision and editorial whitepaper clarity, aligned with the Education & Simulation design principles (clean neutral canvas, tabular numerals, high legibility).
+- **Color Palette & Mood**:
+  - Dominant Canvas: Clean stone/slate surface (`bg-white` / `bg-stone-50`).
+  - Candidate Polygon & Trace: Deep ink stone (`#1c1917` / `text-stone-900`).
+  - Benchmark Polygon & Curve: Emerald standard (`#059669` / `text-emerald-700`).
+  - Trajectory Target Beacon: Coral / Amber pulse (`#d97706` / `#dc2626`).
+- **Typography & Hierarchy**: Serif section headers (`font-serif font-bold text-stone-900`), clean sans body (`font-sans text-stone-600`), and tabular figures (`font-mono tabular-nums`) for all scores, benchmarks, and deltas.
+- **Component Styling & Layout**: Zero-pill metadata discipline, crisp hairline borders (`border-stone-200`), explicit labels, and balanced dual-column layout.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Tier-First Benchmark Calibration**:
-  - *Chosen Approach*: Group universities and benchmarks primarily by tier (Top 5, Top 10, Top 25, Top 50, Top 100). The requirements (GPA 3.96+, SAT 1540+, first-author paper, Olympiad medals) reflect the tier itself, while individual university cards under the tier highlight specific institutional nuances (e.g., MIT's maker portfolio vs. Oxford's STEP/tutorial focus).
-  - *Why*: Eliminates repetitive dropdown friction where selecting different colleges in the same tier showed near-identical general requirements.
-- **Decision 2: Institutional Whitepaper Styling vs. Dark Terminal**:
-  - *Chosen Approach*: Implement an archival whitepaper design with high readability, muted tones, and paper borders instead of a high-contrast black terminal or neon cards.
-  - *Why*: Directly honors user selection in Phase 1 and matches the solemn, credible tone of an elite academic advisory whitepaper.
-- **Decision 3: Global Copy Normalization ("Thousands of Students")**:
-  - *Chosen Approach*: Replace all instances of "1,500" in titles, subtitles, banners, and tooltips with "thousands of students" or "Thousands of Admitted Students".
-  - *Why*: Matches user directive while keeping the underlying 1,500 empirical records fully functional for math, charts, and queries.
+### Decision 1: Country-Weighted Composite Readiness Score vs Simple Mean
+- **Chosen Approach**: Weight the 6 dimensions according to the country's admissions formula (e.g., Singapore: Academics 75%, Testing 15%, Supercurriculars 8%, Leadership 2%, mapped to the 6 dimensions) to compute `baselineReadiness`.
+- **Why**: Different destination countries prioritize different competencies. A candidate with world-class olympiad problem solving has higher baseline readiness in Singapore/UK than in holistic US admissions.
+- **Trade-Off**: Slightly more complex formula than an unweighted average, but provides authentic admissions modeling.
+
+### Decision 2: Direct 6-Dimensional Points Injection into SpiderChart
+- **Chosen Approach**: Extend `SpiderChart` to accept explicit `customEvaluations` or `directScores` (e.g. `Record<DimensionKey, number>`), falling back to `evaluateStudent(profile)` only when direct scores are omitted.
+- **Why**: Eliminates the mismatch where `BackEngineeredRoadmapView` computed dynamic tier/country points (e.g. 78, 65, 82) but `SpiderChart` recalculated divergent scores (e.g. 52, 60, 58) from student text strings.
+- **Trade-Off**: Requires updating `SpiderChartProps` to support both direct evaluation profiles and raw student profiles.
+
+### Decision 3: Country-Calibrated Trajectory Benchmark Curves
+- **Chosen Approach**: Modify `getFieldSpecificMilestones` in `TrajectoryTwoLineChart` to factor in `targetCountry` alongside `targetRankTier`. Countries like the UK require higher early academic/subject competency (steeper initial slope), whereas the US requires sustained extracurricular spikes through Grade 11/12.
+- **Why**: Guarantees that the trajectory benchmark line matches the country's expectations and stays mathematically consistent with the radar benchmark polygon.
 
 ---
 
 ## 4. Technical Architecture & Data Strategy
 
+### Architecture & Component Diagram
+
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        App State & Navigation                          │
-│   activeTab: 'database' | 'roadmap' | 'playbook' | 'cohort'            │
-│   cohortData: thousands of admitted profiles                           │
-└───────────────────────────────────┬────────────────────────────────────┘
-                                    │
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│             BackEngineeredRoadmapView (Institutional Memo)             │
+│                      BackEngineeredRoadmapView                         │
 │                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ 1. Tier Switcher: [Top 5] [Top 10] [Top 25] [Top 50] [Top 100]    │  │
-│  │    • Member Institutions Listed Quietly Underneath               │  │
-│  │    • Target Country Filter (US, UK, CA, SG, EU, All)              │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
+│  State: target (tier, country), baseline, completedMilestoneIds        │
 │                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ 2. Executive Diagnostic Memo (Direct Bullet Points)              │  │
-│  │    • Academic Standard & Prerequisite Class Rank                 │  │
-│  │    • Testing Benchmark (SAT/ACT/Admissions Assessments)          │  │
-│  │    • Supercurricular Thresholds (Research, Competitions, Making) │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-│                                                                        │
-│  ┌──────────────────────────────┐    ┌──────────────────────────────┐  │
-│  │ 3. 6-Aspect Radar Comparison │    │ 4. Two-Line Trajectory Path  │  │
-│  │    (Student vs Tier Standard)│    │    (Average vs Student Gap)  │  │
-│  └──────────────────────────────┘    └──────────────────────────────┘  │
-│                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ 5. Milestone Action Plan (Grade 9-12 Supercurricular Sequence)   │  │
-│  │    Clean unboxed lists with direct rationales                    │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────┘
+│  Unified Scoring Engine:                                               │
+│  ├── getCountryDimensionalRequirements(country, tier, field)           │
+│  │   └── Returns: benchmarkScores { problemSolving, tech, ... }       │
+│  ├── calculateCandidateAchievedPoints(country, tier, baseline, items)  │
+│  │   └── Returns: candidateScores { problemSolving, tech, ... }        │
+│  └── calculateCountryWeightedComposite(country, scores)                │
+│      └── Returns: compositeReadiness (0 - 100)                         │
+└────────────────────────────────────┬───────────────────────────────────┘
+                                     │
+           ┌─────────────────────────┴────────────────────────┐
+           ▼                                                  ▼
+┌──────────────────────────────────────┐  ┌──────────────────────────────────────┐
+│  Spider & Radar Competency Section   │  │  2-Line Trajectory Chart Component  │
+│                                      │  │                                      │
+│  SpiderChart                         │  │  TrajectoryTwoLineChart              │
+│  ├── Direct candidate scores         │  │  ├── baselineReadiness               │
+│  │   [78, 82, 65, 70, 75, 68]        │  │      (= composite candidate score)   │
+│  └── Direct benchmark scores         │  │  ├── projectedReadiness              │
+│      [88, 85, 80, 75, 80, 75]        │  │  ├── targetRankTier & targetCountry  │
+│                                      │  │  └── Dynamic milestone avg curve     │
+│  Gap Breakdown Table:                │  │      scaled by Country & Tier        │
+│  └── Exact matching 6-D points       │  │                                      │
+└──────────────────────────────────────┘  └──────────────────────────────────────┘
 ```
 
-### Component Updates Planned
-1. **`src/components/NavigationTabs.tsx`**: Restyle with clean editorial tabs, subtle active border, replace "1,500 Cohort" with "Admitted Cohort (Thousands of Students)".
-2. **`src/components/roadmap/BackEngineeredRoadmapView.tsx`**: Restructure layout with Top 5 / 10 / 25 / 50 / 100 tier segmented control, remove loud gradient banners, replace with whitepaper executive memo and unboxed text metadata.
-3. **`src/components/roadmap/UniversityAdmissionsSummary.tsx`**: Redesign as an Institutional Advisory Memo with direct factual bullet points, quiet typography, and tier-grouped university visions.
-4. **`src/components/roadmap/TrajectoryTwoLineChart.tsx`**: Style with crisp institutional ink lines and subtle beacon dot.
-5. **`src/components/roadmap/SupercurricularMilestonesView.tsx`**: Strip card-in-card borders and pill badges; present milestones as an editorial timeline with direct action items.
-6. **`src/components/cohort/AdmittedCohortExplorerView.tsx`**: Update headline and metadata tags to "Thousands of Admitted Students".
+### Data Model & Synchronization Strategy
+
+1. **New Unified Calculation Helper** (`src/utils/roadmapCalculations.ts` or within `countryCompetencyRequirements.ts`):
+   - Computes country-weighted composite score from 6-dimensional points:
+     $$\text{Composite} = \sum_{d \in \text{dims}} (\text{score}_d \times \text{weight}_d)$$
+   - Computes projected readiness dynamically based on remaining milestones.
+
+2. **SpiderChart Props Extension** (`src/components/SpiderChart.tsx`):
+   - Add optional `directEvaluations?: { id: string; name: string; scores: Record<string, number>; colorIdx: number }[]`.
+   - When provided, render vertices directly from `scores[dimKey]`, guaranteeing pixel-perfect alignment with the table and trajectory score.
+
+3. **TrajectoryTwoLineChart Synchronization** (`src/components/roadmap/TrajectoryTwoLineChart.tsx`):
+   - Add `targetCountry?: string` to `TrajectoryTwoLineChartProps`.
+   - Calculate trajectory points using `targetCountry` pace curves and `targetRankTier` multipliers.
+   - Synchronize the Grade milestone point corresponding to `currentGrade` with the candidate's exact composite readiness score.
+
+4. **Integration in BackEngineeredRoadmapView** (`src/components/roadmap/BackEngineeredRoadmapView.tsx`):
+   - Feed the same `candidateAchievedPoints` and `dimensionalRequirements` into both the `SpiderChart` and the `TrajectoryTwoLineChart`.
+   - Provide seamless reactivity when the user changes country or tier in any section of the app.
